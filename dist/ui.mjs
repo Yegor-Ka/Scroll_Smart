@@ -20,7 +20,7 @@ export function cardNode(doc,c,isSaved){
  if(c.kind)body.append(node(doc,'div','content-kind',c.kind));
  body.append(node(doc,'h3','',c.title),node(doc,'p','',c.summary));
  const destination=safeUrl(c.url);if(destination)body.append(node(doc,'p','destination','External site: '+new URL(destination).hostname));
- const bottom=node(doc,'div','card-bottom'),read=link(doc,'Explore the original ↗',c.url,'read-link');read.dataset.read=c.id;
+ const bottom=node(doc,'div','card-bottom'),read=node(doc,'button','read-link','Read here →');read.type='button';read.dataset.open=c.id;read.setAttribute('aria-haspopup','dialog');
  const save=node(doc,'button','save'+(isSaved?' saved':''),isSaved?'✓':'＋');save.type='button';save.dataset.save=c.id;
  save.title=isSaved?'Remove from saved stories':'Save for later';
  save.setAttribute('aria-label',(isSaved?'Unsave ':'Save ')+c.title);save.setAttribute('aria-pressed',String(isSaved));

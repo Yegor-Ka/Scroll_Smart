@@ -1,5 +1,5 @@
 /*
-  Content-Security-Policy: default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self'; connect-src https://hacker-news.firebaseio.com https://api.spaceflightnewsapi.net https://earthquake.usgs.gov https://api.crossref.org https://openlibrary.org https://www.loc.gov https://hn.algolia.com https://www.ebi.ac.uk https://www.cisa.gov https://raw.githubusercontent.com; img-src 'self'; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'; require-trusted-types-for 'script'; trusted-types 'none'
+  Content-Security-Policy: default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self'; connect-src 'self' https://hacker-news.firebaseio.com https://api.spaceflightnewsapi.net https://earthquake.usgs.gov https://api.crossref.org https://openlibrary.org https://www.loc.gov https://hn.algolia.com https://www.ebi.ac.uk https://www.cisa.gov https://raw.githubusercontent.com; img-src 'self'; font-src 'self'; manifest-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors 'none'; require-trusted-types-for 'script'; trusted-types 'none'
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
   X-Frame-Options: DENY

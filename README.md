@@ -1,90 +1,84 @@
 # Scroll Smart
 
-A responsive first version of a personal learning feed. Desktop and mobile share one web app; this is not a native iOS/Android app.
+A responsive personal learning feed for desktop and mobile. It includes topic filters, selected milestones since 2016, original-source attribution, a device-local saved collection, a five-idea daily goal, and an in-app article reader. It is a web app, not a native iOS/Android app.
 
-## Run locally
+## Local setup and run
 
-From the repository root: `python3 scroll-smart/serve.py`, then open http://127.0.0.1:8080. From this folder, use `python3 serve.py`.
+From the repository root, with Python 3.10+ on Unix and Node.js 22+ for tests:
 
-No installation or build is required. Publish `dist/` on a static host.
+```sh
+python3 -m venv scroll-smart/.venv
+scroll-smart/.venv/bin/python -m pip install -r scroll-smart/requirements.txt
+scroll-smart/.venv/bin/python scroll-smart/serve.py
+```
 
-## Features
+Open **http://127.0.0.1:8080**. From inside `scroll-smart`, use `.venv/bin/python serve.py`. Stop an older server with Ctrl+C first, or select `--port 8081`. Restart the server after backend or policy changes. There is no JavaScript dependency installation or build step. Python dependencies are pinned: nh3 for established HTML5 sanitization and defusedxml for hardened XML parsing.
 
-- Topic filtering, selected milestones from 2016 onward, original-source links.
-- Device-local saved stories and daily five-idea goal. Opening a source counts as exploring; reading comprehension is not measured.
-- Live technology links, space news, earthquake observations, and journal metadata from Hacker News, Spaceflight News, USGS, and Crossref. No personal API keys are required.
-- Refresh on opening, on demand, and every 15 minutes while visible. Failed providers are reported; curated content remains available. There is no background ingestion while closed, content database, account sync, AI summarization, or exhaustive decade archive.
-- The curated nature explainer is marked evergreen rather than presented as a dated discovery.
+The launcher serves an absolute asset directory, accepts only localhost/127.0.0.1, validates Host and Origin, and requires Unix descriptor-relative/no-follow file opening. It is a development server; do not expose it directly to the internet.
 
-## Sources and credentials
+## Reading and saving
 
-- Hacker News: https://github.com/HackerNews/API
-- Spaceflight News: https://api.spaceflightnewsapi.net/v4/docs/
-- Optional broader news: https://newsapi.org/docs and https://newsapi.org/pricing. Requires your own account key; the free Developer plan does not permit production use.
+- Click/tap a card for the in-app reader. A 500 ms delay on the card body distinguishes a single click from the existing double gesture. **Read here →** and Enter on a focused card open immediately.
+- The native dialog becomes full-screen on phones. It shows the title, provider, topic, available author/date, an estimate for the text actually displayed, and a persistent original-source link opening a separate tab.
+- Back, Escape, or the browser Back button closes the reader and restores the feed scroll position. The feed DOM and loaded batch stay in place. Outstanding requests are canceled on close and late results are ignored.
+- Double-click/double-tap the card or reading area to save or unsave. Focus a card/reading area and press **S**, or use the save button. Scrolling, long presses, controls, and multi-touch do not count as double-taps.
+- Reader and feed bookmarks use the same collection. Opening a reader counts an idea once toward the daily goal; it does not claim to measure reading completion or comprehension.
+- Saved stories and progress use browser localStorage, limited to 200 records. They do not sync across devices. Clearing storage removes them; storage failures are explicitly reported as session-only.
 
-Do not store paid API keys in public files or browser storage. Add a backend with server-held secrets for providers that require keys. A later ingestion service can deduplicate, classify, store source timestamps, and schedule updates while the app is closed. Review publisher reuse terms before expanding beyond attributed excerpts and links.
+A loading state is shown during retrieval. **Excerpt only** means the full article could not be retrieved; the existing summary is displayed without claiming it is complete. Catalog descriptions and structured records have separate labels. No third-party pages are embedded. No remote hero images are displayed: there is no approved licensed-image/proxy path, and the existing `img-src 'self'` policy remains intact.
 
-Saved stories and progress use browser localStorage; they do not synchronize across devices. Clearing browser storage removes them.
+## Feed and lazy rendering
 
-## Updated sources and refresh
+There are 11 existing adapters, with no API keys required. Refresh happens on opening, manually, every 15 minutes while visible, and when returning after 15 minutes. Requests have a 30-second cooldown and cannot overlap. Unavailable providers retain their prior in-memory results and report failure. There is no background ingestion while closed.
 
-Four public providers are integrated: Hacker News, Spaceflight News, [USGS](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php), and [Crossref](https://www.crossref.org/documentation/retrieve-metadata/rest-api/). No account keys are required. USGS cards are recent seismic observations, not emergency alerts. Crossref cards show journal metadata, not independently verified findings. The Wikipedia Wikifeeds API was considered but excluded because its official documentation announces gradual deprecation from July 2026.
+Feeds initially construct eight cards. Scrolling near the end appends eight more without replacing the existing cards. **Load more** is a keyboard-accessible fallback. Filters/views reset the batch, while save/refresh updates preserve the number loaded. This is lazy rendering of the bounded fetched collection, not unlimited upstream pagination.
 
-**Refresh feed** checks all four providers, prevents overlapping requests, limits checks to once per 30 seconds, and removes duplicate links. Automatic checks happen on opening, every 15 minutes while visible, and on returning after 15 minutes. Failed providers retain their previous in-memory results; the UI identifies failures and warns that results may be stale. A page reload starts fresh. Saved stories are limited to 200 records.
+## Source-specific reader support
 
-## Reliable local start
+All feed adapters retain their original fetching behavior. Full-text retrieval is a separate, on-demand server operation.
 
-From the repository root, run `python3 scroll-smart/serve.py`. This serves the correct absolute directory regardless of the terminal's current folder and adds security headers. Open http://127.0.0.1:8080. Stop an earlier server with Ctrl+C first, or use `--port 8081`.
-
-## Security review and validation
-
-See [SECURITY.md](SECURITY.md) for scope, mitigations, deployment requirements, and remaining risks. Run `node --test scroll-smart/tests/*.test.mjs` from the repository root. The tests use controlled fixtures and do not verify live API availability or browser CORS.
-
-## Expanded learning topics
-
-The Discover feed now offers Books, History, AI, Computer Science, Medicine, and Cybersecurity filters alongside the original topics. There are 11 independently tracked provider adapters:
-
-| Topic | Content | Source |
+| Adapter / source | In-app content | Why / conditions |
 | --- | --- | --- |
-| Books | Six science-book catalog discoveries, plus three fixed original mini-reviews with reading suggestions | Open Library; original Scroll Smart notes linking to Project Gutenberg |
-| History | Six archive essays, plus sourced facts about Apollo 11 and the Web | Library of Congress; U.S. National Archives; CERN |
-| AI | Six recent community-submitted links matching artificial intelligence | HN Search / Algolia |
-| Computer Science | Six recent community-submitted links matching computer science | HN Search / Algolia |
-| Medicine | Six recent indexed medical journal articles | Europe PMC / EMBL-EBI |
-| Cybersecurity | Six community breach-report links and six recent catalog additions | HN Search; CISA KEV, with the official cisagov/kev-data mirror as a fallback |
+| Europe PMC / Medicine | Full main-body text when approved; otherwise excerpt | Rehydrate the MED ID through the official API, require Open Access, a valid PMCID and an explicit CC BY or CC0 reuse link in JATS XML. Reject marked retractions, unverified licenses, DTDs/entities, blocked responses or unsupported content. |
+| USGS / Nature | Official structured event record | Re-fetch the official event ID. Labeled as observations, not a complete news article or an emergency alert. |
+| CISA KEV / Cybersecurity advisories | Official catalog record | Look up the CVE in the existing official cisagov mirror (CC0). Catalog addition dates are not attack dates. |
+| Open Library / Books | Catalog description, if provided | Official work ID lookup; this is not the full book or a professional review. |
+| NOAA / curated coral explainer | Main article text when safely identifiable | Only this fixed existing page is eligible for HTML extraction, under NOAA's public-information policy. Honor robots.txt and restrictive meta tags; refuse access-wall indicators and redirects. Missing/unclear main content falls back. |
+| Crossref / Science | Existing excerpt and metadata | Crossref provides metadata and full-text links, not blanket permission to redistribute publisher articles. No DOI/publisher redirects are followed. |
+| Spaceflight News / Space | Existing attributed summary | Aggregation does not grant a full-text reuse license for each publisher. |
+| Hacker News / Technology | Existing excerpt and metadata | Arbitrary community submission URLs are never fetched by the reader server. |
+| HN Search / AI | Existing excerpt and metadata | Same community-link restrictions. |
+| HN Search / Computer Science | Existing excerpt and metadata | Same community-link restrictions. |
+| HN Search / cybersecurity reports | Existing excerpt and metadata | Same restrictions; selected reports are not comprehensive incident coverage. |
+| Library of Congress / History | Existing excerpt and metadata | Collection access was blocked in the prior check and reproduction rights are item-specific; no generic collection crawler was added. |
+| Other curated sources and original book mini-reviews | Existing excerpt/reading note and source link | No page fetching without a separately reviewed source policy. Project Gutenberg links do not cause book downloads. |
 
-These sources require no app API keys. Historical material and book discoveries are labeled evergreen, not breaking news. Mini-reviews are original editorial reading notes, not copied professional reviews or invented user ratings. Project Gutenberg availability and copyright rules vary by jurisdiction; check the linked edition. Medicine cards are research updates, not patient-specific advice. Community news can include opinion or unconfirmed reporting. Cybersecurity coverage is selective and cannot include every incident; KEV addition dates are not attack dates.
+Primary policy references: [Europe PMC REST service](https://europepmc.org/RestfulWebService), [Crossref full-text limitations](https://www.crossref.org/documentation/retrieve-metadata/rest-api/text-and-data-mining-for-researchers/), [NOAA reuse policy](https://oceanservice.noaa.gov/disclaimer.html), [CISA official mirror and license](https://github.com/cisagov/kev-data), [Open Library API](https://openlibrary.org/developers/api).
 
-The expanded Sources & updates screen reports each adapter independently. All adapters participate in the existing refresh, failure retention, duplicate removal, topic filtering, and save functions. The refresh UI derives its source count from the provider registry.
+## Reader security model
 
-Provider documentation: [Open Library](https://openlibrary.org/developers/api), [Library of Congress](https://www.loc.gov/apis/json-and-yaml/), [HN Search](https://hn.algolia.com/api), [Europe PMC](https://europepmc.org/RestfulWebService), [CISA official mirror](https://github.com/cisagov/kev-data). API schemas are fixture-tested; browser CORS and live availability have not been verified in this environment. A failing provider is shown as unavailable without bypassing browser security or using an unknown proxy.
+`GET /api/reader?id=<internal-feed-id>` is same-origin and accepts one ID only—no URL field, proxy destination, cookies, API keys, or browser-supplied article HTML. Supported native IDs are independently rehydrated from the official source and matched against the returned record; unknown/unsupported records cannot become arbitrary fetches. The endpoint does not trust localStorage records as server authorization. IDs are not signed tokens: they select public source records through fixed handlers, not arbitrary URL paths or hosts.
 
-## Hardened local preview
+Server destinations are an explicit subset of existing source domains: `www.ebi.ac.uk`, `earthquake.usgs.gov`, `openlibrary.org`, `raw.githubusercontent.com`, and `oceanservice.noaa.gov`. Only HTTPS/default port is permitted. DNS answers must all be public. Literal/private/loopback/link-local/reserved/multicast/metadata destinations, credentials and custom ports are rejected. The socket connects to a validated numeric address while TLS verifies the original hostname; redirects trigger fresh URL/DNS checks. No environment HTTP proxy or second DNS lookup is used. HTML and robots retrieval do not follow redirects.
 
-Restart `python3 scroll-smart/serve.py` after server/security-policy changes, then reload the page. The preview accepts only `http://127.0.0.1:8080` or `http://localhost:8080` (or the selected `--port`). Custom hostnames, LAN access, cross-site embeddings, and direct requests to nonpublic files are intentionally rejected. The launcher requires Unix file-descriptor/no-follow support. Serve the static assets through an HTTPS production host for real deployment.
+Limits: four reader requests and four DNS resolutions concurrently, 20 uncached reader admissions/minute globally, 18-second retrieval deadline with socket shutdown watchdog, six-second socket operations, two-second DNS waits, three redirects, 2 MiB response cap (HTML 1 MiB; robots 64 KiB), and 120,000 text characters. Responses are cached in memory for 10 minutes (fallbacks 60 seconds), at most 64 entries. No article payload, credential, or source query URL is logged. Unsupported, blocked, paywalled, unlicensed, or unsafely parsed content returns the excerpt state.
 
-The renderer now constructs DOM nodes instead of parsing HTML strings. The CSP enforces Trusted Types where supported. For the complete review, findings, test commands, and deployment limits, see [SECURITY.md](SECURITY.md).
+nh3 removes executable/unwanted HTML subtrees and all attributes/URLs. The server returns only typed plain-text paragraph/heading blocks, never an HTML document. The browser validates them and uses `textContent`/DOM construction. XML parsing blocks external entities and DTDs. No iframe, image hotlink, script, cookie, or tracking markup is imported. Security headers and Trusted Types stay in force; the sole network-policy addition is `connect-src 'self'` for the new same-origin endpoint, with no permissive CORS header.
 
-## Source validity and outgoing links
+## Tests
 
-See [SOURCE_AUDIT.md](SOURCE_AUDIT.md) for the checked provider identities, direct HTTPS results, unavailable endpoints, and corrected curated links. Cards show their actual destination hostname. Provider fetch success does not certify accuracy or malware safety, especially for community links and DOI redirects.
+From the repository root:
 
-## Modern interface and quick saving
+```sh
+node --test --experimental-test-isolation=none --test-reporter=spec scroll-smart/tests/*.test.mjs
+scroll-smart/.venv/bin/python -B -m unittest discover -s scroll-smart/tests -p 'test_*.py' -v
+scroll-smart/.venv/bin/python -m pip check
+```
 
-The responsive interface uses system typography, topic artwork drawn with CSS, larger touch controls, clear focus indicators, reduced-motion support, and floating mobile navigation. No third-party runtime scripts or remote fonts were added.
+Latest result: **42 JavaScript tests + 20 Python tests = 62 passing tests**, zero failures. Coverage includes reader opening, mobile dialog markup/rules, bookmarks, daily-goal integration, fallbacks, original-source links, SSRF/DNS/redirect controls, timeouts and response limits, sanitization, robots policy, cache/concurrency limits, and existing feed/lazy-loading/security regressions. Browser/device appearance and live provider access remain unverified; fixture tests are not an independent penetration test.
 
-- Desktop: double-click the body of a story to save or unsave it.
-- Mobile/tablet: double-tap the same story without scrolling to save or unsave it.
-- Keyboard: focus a card and press **S**, or activate its save button.
-- The save button also removes an existing bookmark. Repeating a quick-save gesture removes the story from Saved for later.
-- A confirmation and saved marker appear; stories remain in **Saved for later** on the same browser/device. If browser storage fails, the confirmation explicitly says the update is session-only.
+## Production deployment review still required
 
-Links and controls are excluded from quick-saving. Swipes, scrolling, long presses, multi-touch, and canceled touches reset the mobile gesture. Pinch zoom and regular scrolling remain available.
+The retained `.openai/hosting.json` currently describes static hosting only. Copying `dist` to a static host does **not** deploy Python: the UI will gracefully fall back to excerpts when `/api/reader` is absent. Production full text requires a supported backend deployment and a same-origin `/api/reader` route. Review TLS/HSTS, applied headers, access controls, per-client rate limits, outbound network/DNS restrictions, process/thread limits, dependency advisories, publisher-policy changes, and retention before exposing it publicly. No production deployment was performed.
 
-Gesture tests: `node scroll-smart/tests/gestures.test.mjs`. The complete test command is `node --test scroll-smart/tests/*.test.mjs` plus the Python tests documented in SECURITY.md. Real desktop/mobile browser appearance and touch behavior still need visual/device verification; automated gesture tests use controlled pointer events.
-
-## Lazy feed rendering
-
-Discover, decade, and saved feeds initially render eight matching stories. Scrolling within 300 px of the Load more button appends the next eight. The button is also a keyboard-accessible fallback when IntersectionObserver is unavailable. Existing card nodes remain intact when appending. Topic/view changes reset the batch; saving or refreshing preserves the number already loaded. The footer appears after all matching stories are shown.
-
-This lazily renders the fetched collection; it does not add unlimited provider pagination or defer the existing bounded API refresh requests. Offscreen cards also use browser content-visibility optimization. Tests: `node scroll-smart/tests/lazy-feed.test.mjs`.
+No accounts, cross-device sync, payments, uploads, background content database, or malware-reputation integration were introduced. External original links remain untrusted. Read [SECURITY.md](SECURITY.md) and [SOURCE_AUDIT.md](SOURCE_AUDIT.md) for the prior review and its limits.

@@ -1,0 +1,3 @@
+# Reader sanitization and hardened XML parsing; no JavaScript runtime dependencies.
+nh3==0.3.7
+defusedxml==0.7.1

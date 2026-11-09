@@ -10,14 +10,14 @@ test('attacker strings remain text and cannot create markup or event attributes'
  const el=cardNode(document,c,false),nodes=descendants(el);
  assert.ok(el.textContent.includes(attack));assert.ok(!nodes.some(n=>['IMG','SCRIPT','IFRAME'].includes(n.tagName)));
  assert.ok(!nodes.some(n=>Object.keys(n.attributes).some(a=>a.startsWith('on'))));
- const link=nodes.find(n=>n.tagName==='A');assert.equal(link.rel,'noopener noreferrer');assert.equal(link.referrerPolicy,'no-referrer');assert.equal(link.href,'https://example.org/');
+ const read=nodes.find(n=>n.dataset.open==='test');assert.equal(read.tagName,'BUTTON');assert.equal(read.attributes['aria-haspopup'],'dialog');
 });
 test('source details also use DOM text assignment',()=>{
  const els=sourceNodes(document,[{id:'x',name:'<img onerror=evil>',description:'<script>evil</script>',docs:'javascript:evil'}],new Map());
  const nodes=els.flatMap(descendants);assert.ok(!nodes.some(n=>n.tagName==='SCRIPT'||n.tagName==='IMG'));assert.equal(nodes.find(n=>n.tagName==='A').href,undefined);
 });
 test('application has no HTML parsing sinks, eval or dynamic script construction',async()=>{
- for(const file of ['../dist/app.js','../dist/ui.mjs','../dist/feed-core.mjs']){
+ for(const file of ['../dist/app.js','../dist/ui.mjs','../dist/feed-core.mjs','../dist/reader.mjs']){
   const source=await readFile(new URL(file,import.meta.url),'utf8');
   assert.doesNotMatch(source,/\.innerHTML\s*=|\.outerHTML\s*=|insertAdjacentHTML|document\.write|\beval\s*\(|new Function\s*\(/);
  }
@@ -27,5 +27,5 @@ test('cards show the actual destination instead of hiding it behind an aggregato
  const c=normalizeCard({id:'outbound',topic:'Technology',title:'An article',summary:'Summary',source:'Hacker News',url:'https://publisher.example.org/article'});
  const el=cardNode(document,c,false),nodes=descendants(el);
  assert.ok(el.textContent.includes('External site: publisher.example.org'));
- const a=nodes.find(n=>n.tagName==='A');assert.equal(a.title,'https://publisher.example.org/article');
+ const read=nodes.find(n=>n.dataset.open==='outbound');assert.equal(read.tagName,'BUTTON');assert.equal(read.textContent,'Read here →');
 });
