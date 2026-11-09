@@ -41,3 +41,22 @@ test('oversized stored JSON is rejected before parsing and invalid UI actions ar
  listeners.click({target:{closest:selector=>selector==='[data-filter],[data-topic]'?{dataset:{filter:'<script>'}}:null}});
  assert.equal(element('#feed').textContent,before);
 });
+
+test('quick saving toggles, persists across reloads, and supports bookmark removal',async()=>{
+ const storage=new Map();
+ async function launch(){
+  const elements=new Map(),listeners={};const element=key=>{if(!elements.has(key))elements.set(key,new Element('div'));return elements.get(key)};
+  class Controller extends core.FeedController{constructor(options){super({...options,load:async()=>[]})}}
+  const context=vm.createContext({Date,URL,Set,Map,Promise,JSON,Number,String,Array,localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:(name,fn)=>listeners[name]=fn,hidden:false},setInterval(){},...core,...ui,FeedController:Controller});
+  const source=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*?;\n/gm,'');vm.runInContext(source,context);await new Promise(r=>setImmediate(r));return {element,listeners};
+ }
+ const first=await launch();const target={closest:selector=>selector==='[data-card-id]'?{dataset:{cardId:'blackhole'}}:null};
+ first.listeners.dblclick({target,timeStamp:100,pointerType:'mouse'});
+ assert.equal(JSON.parse(storage.get('ss-saved')).length,1);assert.equal(first.element('#save-count').textContent,'1');assert.match(first.element('#save-feedback-message').textContent,/Saved for later/);
+ first.listeners.dblclick({target,timeStamp:1000,pointerType:'mouse'});assert.equal(JSON.parse(storage.get('ss-saved')).length,0);assert.match(first.element('#save-feedback-message').textContent,/Removed/);
+ first.listeners.dblclick({target,timeStamp:2000,pointerType:'mouse'});assert.equal(JSON.parse(storage.get('ss-saved')).length,1);
+ const second=await launch();second.listeners.click({target:{closest:s=>s==='[data-view]'?{dataset:{view:'saved'}}:null}});
+ assert.match(second.element('#feed').textContent,/black hole/);assert.equal(second.element('#save-count').textContent,'1');
+ second.listeners.click({target:{closest:s=>s==='[data-save]'?{dataset:{save:'blackhole'}}:null}});
+ assert.equal(JSON.parse(storage.get('ss-saved')).length,0);assert.equal(second.element('#save-count').textContent,'0');
+});

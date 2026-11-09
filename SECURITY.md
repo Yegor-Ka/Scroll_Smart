@@ -17,7 +17,7 @@ Reviewed the complete application source, public assets, local HTTP preview serv
 
 ## Verification
 
-- 26 automated tests pass: 14 feed/request/schema tests, 4 DOM-rendering tests, 2 application smoke tests, and 6 HTTP/server tests.
+- 39 automated tests pass: 14 feed/request/schema tests, 4 DOM-rendering tests, 3 application smoke tests, 8 gesture tests, 4 lazy-feed tests, and 6 HTTP/server tests.
 - Server tests exercise actual HTTP parsing and response generation using an in-memory socket. They cover all public assets, GET/HEAD, Host/Origin validation, traversal, symlinks/hardlinks, private paths, unsupported methods, request bodies, and security headers.
 - Browser-independent DOM tests verify that malicious markup remains text and no script/image/event nodes are created. Navigation, topic filters, provider failures, and oversized storage are checked with a minimal DOM test double.
 - Credential-pattern scan found no real credentials in application files or available Git history. A URL-with-credentials match in a negative test fixture is intentionally fake. This is a heuristic scan, not an exhaustive secret-detection service.
@@ -55,3 +55,9 @@ References: [Python HTTP server security guidance](https://docs.python.org/3/lib
 ## Source verification follow-up
 
 See [SOURCE_AUDIT.md](SOURCE_AUDIT.md) and its raw HTTPS observations for the provider identity, link availability, redirect, JSON, and CORS review. One broken NASA URL and two canonical redirects were corrected. Outgoing cards display destination domains; source status distinguishes a successful fetch from security or editorial certification. No malware/reputation scanning was performed, and future aggregated links remain unreviewed.
+
+## Interface and gesture changes
+
+Double-click/double-tap saving uses delegated native events and the same bounded, device-local saved collection. Quick-save gestures now toggle saved state. Gesture inputs are checked against existing card IDs before storage; links, buttons, text fields, scrolling, and multi-touch are excluded. Card rendering continues to use textContent and DOM nodes under the existing strict CSP and Trusted Types policy. The redesign adds no external scripts, fonts, assets, API destinations, storage services, or dependencies. Regression tests cover gestures, duplicate synthetic-event suppression, persistence across reloads, and explicit bookmark removal. No live-browser security or visual certification is implied.
+
+Lazy feed rendering appends validated cards in batches using the existing safe DOM renderer. It adds no API endpoints, external dependencies, or HTML parsing. Regression tests cover batch limits, filter resets, preservation of loaded depth, and stale observer notifications. Actual browser/device performance remains unverified.
