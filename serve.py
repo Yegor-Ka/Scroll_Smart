@@ -1,11 +1,13 @@
 """Restricted loopback preview. Deploy static assets through an HTTPS host in production."""
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 from threading import BoundedSemaphore
 import argparse
 import os
 import stat
+import json
+from article_reader import ArticleReader
 
 ROOT = Path(__file__).resolve().parent / 'dist'
 PUBLIC_FILES = {
@@ -13,12 +15,13 @@ PUBLIC_FILES = {
     '/index.html': ('index.html', 'text/html; charset=utf-8'),
     '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
     '/feed-core.mjs': ('feed-core.mjs', 'text/javascript; charset=utf-8'),
+    '/reader.mjs': ('reader.mjs', 'text/javascript; charset=utf-8'),
     '/ui.mjs': ('ui.mjs', 'text/javascript; charset=utf-8'),
     '/style.css': ('style.css', 'text/css; charset=utf-8'),
     '/manifest.json': ('manifest.json', 'application/manifest+json'),
 }
 CSP = ("default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self'; "
-       "connect-src https://hacker-news.firebaseio.com https://api.spaceflightnewsapi.net "
+       "connect-src 'self' https://hacker-news.firebaseio.com https://api.spaceflightnewsapi.net "
        "https://earthquake.usgs.gov https://api.crossref.org https://openlibrary.org "
        "https://www.loc.gov https://hn.algolia.com https://www.ebi.ac.uk "
        "https://www.cisa.gov https://raw.githubusercontent.com; "
@@ -95,6 +98,25 @@ class Handler(BaseHTTPRequestHandler):
         except ValueError:
             self.send_error(404)
             return
+        if path == '/api/reader':
+            if head:
+                self.send_error(405)
+                return
+            try:
+                query = parse_qs(urlsplit(self.path).query, strict_parsing=True, max_num_fields=1)
+                if set(query) != {'id'} or len(query['id']) != 1:
+                    raise ValueError('Invalid query')
+                value = self.server.article_reader.read(query['id'][0])
+            except ValueError:
+                self.send_error(400)
+                return
+            body = json.dumps(value, ensure_ascii=False).encode('utf-8')
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json; charset=utf-8')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
         asset = PUBLIC_FILES.get(path)
         if not asset:
             self.send_error(404)
@@ -133,6 +155,7 @@ class PreviewServer(ThreadingHTTPServer):
 
     def __init__(self, address, root=ROOT):
         self.public_root = root
+        self.article_reader = ArticleReader()
         self.slots = BoundedSemaphore(16)
         super().__init__(address, Handler)
 
@@ -159,7 +182,15 @@ if __name__ == '__main__':
     args = parser.parse_args()
     if not 1 <= args.port <= 65535:
         parser.error('port must be between 1 and 65535')
-    server = PreviewServer(('127.0.0.1', args.port))
+    try:
+        server = PreviewServer(('127.0.0.1', args.port))
+    except OSError as exc:
+        import errno
+        if exc.errno != errno.EADDRINUSE:
+            raise
+        parser.exit(1, f'Port {args.port} is already in use. Stop the existing server with Ctrl+C '
+                       'in its terminal, or run this command with --port followed by a free port '
+                       '(for example, --port 8081).\n')
     print(f'Scroll Smart: http://127.0.0.1:{args.port}', flush=True)
     try:
         server.serve_forever()

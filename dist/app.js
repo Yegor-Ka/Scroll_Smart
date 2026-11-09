@@ -1,5 +1,6 @@
 import {TOPICS, PROVIDERS, normalizeList, FeedController, dedupe} from './feed-core.mjs';
 import {node, cardNode, sourceNodes, bindCardSaving, createLazyFeed} from './ui.mjs';
+import {createArticleReader} from './reader.mjs';
 const curated=[
 {id:'book-frankenstein',topic:'Books',evergreen:true,kind:'Reading note',title:'Frankenstein: ambition is only half the story',summary:'Scroll Smart mini-review: the compelling question is what a creator owes a creation. The novel rewards readers interested in responsibility, rejection, and the social cost of invention. Best for: science ethics and reflective fiction. The nested narration and older prose take patience. Try one chapter, then ask whose account you trust. This is an original editorial note, not a community rating.',source:'Scroll Smart reading note · Mary Shelley',url:'https://www.gutenberg.org/ebooks/84',symbol:'▤'},
 {id:'book-pride',topic:'Books',evergreen:true,kind:'Reading note',title:'Pride and Prejudice: practice changing your mind',summary:'Scroll Smart mini-review: Austen makes social perception entertaining and unreliable. The sharp dialogue invites you to notice how confidence, money, and first impressions shape judgment. Best for: readers who enjoy character and social observation. The slow build may not suit an action-first mood. Read a chapter and track one assumption a character makes.',source:'Scroll Smart reading note · Jane Austen',url:'https://www.gutenberg.org/ebooks/1342',symbol:'▤'},
@@ -16,6 +17,7 @@ const curated=[
 {id:'rosetta',topic:'Space',year:2016,title:'What a comet can tell us about our origins',summary:'The Rosetta mission followed a comet around the Sun and investigated the material left over from the formation of our solar system.',source:'European Space Agency',url:'https://www.esa.int/missions/about-us/directorates/science/rosetta/rosetta',symbol:'☄'}];
 const $=s=>document.querySelector(s);const topics=TOPICS;let view='feed',topic='All topics',live=[];
 function getLocal(k,fallback){try{const raw=localStorage.getItem(k);return typeof raw==='string'&&raw.length<=1024*1024?JSON.parse(raw)??fallback:fallback}catch{return fallback}}function persist(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}}
+let reader=null;
 let saved=normalizeList(getLocal('ss-saved',[]));
 const day=()=>new Date().toLocaleDateString('en-CA');
 let progress=getLocal('ss-progress',{});
@@ -25,12 +27,12 @@ $('#date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',mon
 function stats(){resetDay();$('#save-count').textContent=saved.length;$('#read-count').textContent=progress.ids.length;$('#progress').value=Math.min(5,progress.ids.length);$('#goal-note').textContent=progress.ids.length>=5?'Daily goal reached. Let an idea sink in — you’ve earned a pause.':'Five ideas. A fresh perspective. That’s a good day of scrolling.'}
 function announce(message){$('#save-feedback-message').textContent=message;$('#save-feedback').hidden=false;}
 function saveStory(id){
- const item=[...live,...curated,...saved].find(c=>c.id===id);if(!item)return;
+ const item=[...live,...curated,...saved,...(reader?.item?[reader.item]:[])].find(c=>c.id===id);if(!item)return;
  const exists=saved.some(c=>c.id===id);
  if(!exists&&saved.length>=200){announce('Your collection is full. Remove a saved story to make room.');return}
  saved=exists?saved.filter(c=>c.id!==id):[...saved,item];
- const restoreCardFocus=document.activeElement?.dataset.cardId===id;
- const durable=persist('ss-saved',saved);render();
+ const restoreCardFocus=!reader?.isOpen&&document.activeElement?.dataset.cardId===id;
+ const durable=persist('ss-saved',saved);render();reader?.updateSaved();
  if(restoreCardFocus){const replacement=[...document.querySelectorAll('[data-card-id]')].find(el=>el.dataset.cardId===id);replacement?.focus({preventScroll:true})}
  announce(durable?(exists?'Removed from Saved for later.':'✓ Saved for later. Find it in your collection.'):'Saved collection updated for this session. Browser storage is unavailable.');
 }
@@ -53,11 +55,23 @@ const controller=new FeedController({onChange:state=>{
   const failed=PROVIDERS.filter(p=>state.states.get(p.id)?.ok===false).map(p=>p.name);
   const successes=[...state.states.values()].filter(s=>s.ok).length;
   $('#status').textContent=state.busy?`Checking ${PROVIDERS.length} content feeds…`:failed.length?`${successes}/${PROVIDERS.length} sources updated · unavailable: ${failed.join(', ')} · previous results may be stale`:`● All ${PROVIDERS.length} sources checked at `+new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
-  render();
+  if(!reader?.isOpen)render();
 }});
 async function refresh(){const result=await controller.refresh();if(result==='cooldown')$('#status').textContent='Please wait 30 seconds between refreshes.'}
-document.addEventListener('click',e=>{const nav=e.target.closest('[data-view]');if(nav){if(!['feed','decade','saved','sources'].includes(nav.dataset.view))return;view=nav.dataset.view;topic='All topics';render();return}const filter=e.target.closest('[data-filter],[data-topic]');if(filter){const selected=filter.dataset.filter||filter.dataset.topic;if(!topics.includes(selected))return;topic=selected;if(view==='sources')view='feed';render();return}const save=e.target.closest('[data-save]');if(save){saveStory(save.dataset.save);return}const read=e.target.closest('[data-read]');if(read&&![...live,...curated,...saved].some(c=>c.id===read.dataset.read))return;if(read){resetDay();}if(read&&!progress.ids.includes(read.dataset.read)&&progress.ids.length<200){progress.ids.push(read.dataset.read);persist('ss-progress',progress);stats()}});
-bindCardSaving(document,id=>saveStory(id));
+document.addEventListener('click',e=>{const nav=e.target.closest('[data-view]');if(nav){if(!['feed','decade','saved','sources'].includes(nav.dataset.view))return;reader?.cancelPending();view=nav.dataset.view;topic='All topics';render();return}const filter=e.target.closest('[data-filter],[data-topic]');if(filter){const selected=filter.dataset.filter||filter.dataset.topic;if(!topics.includes(selected))return;reader?.cancelPending();topic=selected;if(view==='sources')view='feed';render();return}const save=e.target.closest('[data-save]');if(save){saveStory(save.dataset.save);return}const read=e.target.closest('[data-read]');if(read&&![...live,...curated,...saved].some(c=>c.id===read.dataset.read))return;if(read){resetDay();}if(read&&!progress.ids.includes(read.dataset.read)&&progress.ids.length<200){progress.ids.push(read.dataset.read);persist('ss-progress',progress);stats()}});
+function markExplored(id){resetDay();if(!progress.ids.includes(id)&&progress.ids.length<200){progress.ids.push(id);persist('ss-progress',progress);stats()}}
+reader=createArticleReader({doc:document,win:window,dialog:$('#reader'),content:$('#reader-content'),isSaved:id=>saved.some(c=>c.id===id),onSave:saveStory,onOpen:markExplored});
+const findStory=id=>[...live,...curated,...saved].find(c=>c.id===id);
+document.addEventListener('click',e=>{
+ const openButton=e.target.closest?.('[data-open]');
+ if(openButton){const item=findStory(openButton.dataset.open);if(item)reader.open(item,openButton);return}
+ const card=e.target.closest?.('[data-card-id]');if(card)reader.cardClick(findStory(card.dataset.cardId),e);
+});
+document.addEventListener('keydown',e=>{
+ if(e.key!=='Enter'||e.target.closest?.('a, button, input, textarea, select, [contenteditable]'))return;
+ const card=e.target.closest?.('[data-card-id]'),item=card&&findStory(card.dataset.cardId);if(item){e.preventDefault();reader.open(item,card)}
+});
+bindCardSaving(document,id=>{reader.cancelPending(id);saveStory(id)});
 $('#dismiss-feedback').onclick=()=>{$('#save-feedback').hidden=true};
 $('#explore').onclick=()=>{view='decade';topic='All topics';render();$('#feed-title').scrollIntoView({behavior:'smooth',block:'start'})};$('#refresh').onclick=refresh;render();refresh();setInterval(()=>{if(!document.hidden)refresh()},15*60*1000);
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&(controller.lastAttempt===null||Date.now()-controller.lastAttempt>=15*60*1000))refresh()});
