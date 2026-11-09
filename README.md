@@ -68,3 +68,23 @@ The renderer now constructs DOM nodes instead of parsing HTML strings. The CSP e
 ## Source validity and outgoing links
 
 See [SOURCE_AUDIT.md](SOURCE_AUDIT.md) for the checked provider identities, direct HTTPS results, unavailable endpoints, and corrected curated links. Cards show their actual destination hostname. Provider fetch success does not certify accuracy or malware safety, especially for community links and DOI redirects.
+
+## Modern interface and quick saving
+
+The responsive interface uses system typography, topic artwork drawn with CSS, larger touch controls, clear focus indicators, reduced-motion support, and floating mobile navigation. No third-party runtime scripts or remote fonts were added.
+
+- Desktop: double-click the body of a story to save or unsave it.
+- Mobile/tablet: double-tap the same story without scrolling to save or unsave it.
+- Keyboard: focus a card and press **S**, or activate its save button.
+- The save button also removes an existing bookmark. Repeating a quick-save gesture removes the story from Saved for later.
+- A confirmation and saved marker appear; stories remain in **Saved for later** on the same browser/device. If browser storage fails, the confirmation explicitly says the update is session-only.
+
+Links and controls are excluded from quick-saving. Swipes, scrolling, long presses, multi-touch, and canceled touches reset the mobile gesture. Pinch zoom and regular scrolling remain available.
+
+Gesture tests: `node scroll-smart/tests/gestures.test.mjs`. The complete test command is `node --test scroll-smart/tests/*.test.mjs` plus the Python tests documented in SECURITY.md. Real desktop/mobile browser appearance and touch behavior still need visual/device verification; automated gesture tests use controlled pointer events.
+
+## Lazy feed rendering
+
+Discover, decade, and saved feeds initially render eight matching stories. Scrolling within 300 px of the Load more button appends the next eight. The button is also a keyboard-accessible fallback when IntersectionObserver is unavailable. Existing card nodes remain intact when appending. Topic/view changes reset the batch; saving or refreshing preserves the number already loaded. The footer appears after all matching stories are shown.
+
+This lazily renders the fetched collection; it does not add unlimited provider pagination or defer the existing bounded API refresh requests. Offscreen cards also use browser content-visibility optimization. Tests: `node scroll-smart/tests/lazy-feed.test.mjs`.
