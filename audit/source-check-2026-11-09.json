@@ -1,0 +1,417 @@
+{
+  "review_date": "2026-11-09",
+  "scope": "Direct HTTPS checks of 34 pre-change configured API, documentation, and curated URLs. No malware or reputation scan. Changed URLs are documented in SOURCE_AUDIT.md.",
+  "results": [
+    {
+      "type": "documentation",
+      "name": "Open Library \u00b7 book discovery",
+      "url": "https://openlibrary.org/developers/api",
+      "status": 200,
+      "final_url": "https://openlibrary.org/developers/api",
+      "content_type": "application/json",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "documentation",
+      "name": "Library of Congress \u00b7 Today in History",
+      "url": "https://www.loc.gov/apis/json-and-yaml/",
+      "status": 200,
+      "final_url": "https://www.loc.gov/apis/json-and-yaml/",
+      "content_type": "text/html",
+      "cors_origin": "*",
+      "error": "TimeoutError: The read operation timed out"
+    },
+    {
+      "type": "documentation",
+      "name": "Cybersecurity reports \u00b7 HN Search",
+      "url": "https://hn.algolia.com/api",
+      "status": 200,
+      "final_url": "https://hn.algolia.com/api",
+      "content_type": "text/html; charset=utf-8",
+      "cors_origin": "http://127.0.0.1:8080",
+      "oversized": false
+    },
+    {
+      "type": "documentation",
+      "name": "Europe PMC \u00b7 medical research",
+      "url": "https://europepmc.org/RestfulWebService",
+      "status": 403,
+      "error": "HTTP rejection",
+      "final_url": "https://europepmc.org/RestfulWebService"
+    },
+    {
+      "type": "documentation",
+      "name": "CISA \u00b7 exploited vulnerabilities",
+      "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+      "status": 200,
+      "final_url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog",
+      "content_type": "text/html; charset=utf-8",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "documentation",
+      "name": "Hacker News",
+      "url": "https://github.com/HackerNews/API",
+      "status": 200,
+      "final_url": "https://github.com/HackerNews/API",
+      "content_type": "text/html; charset=utf-8",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "documentation",
+      "name": "Spaceflight News",
+      "url": "https://api.spaceflightnewsapi.net/v4/docs/",
+      "status": 200,
+      "final_url": "https://api.spaceflightnewsapi.net/v4/docs/",
+      "content_type": "text/html; charset=utf-8",
+      "cors_origin": "*",
+      "oversized": false
+    },
+    {
+      "type": "documentation",
+      "name": "USGS Earthquake Hazards",
+      "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php",
+      "status": 200,
+      "final_url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php",
+      "content_type": "text/html; charset=UTF-8",
+      "cors_origin": "*",
+      "oversized": false
+    },
+    {
+      "type": "documentation",
+      "name": "Crossref",
+      "url": "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+      "status": 200,
+      "final_url": "https://www.crossref.org/documentation/retrieve-metadata/rest-api/",
+      "content_type": "text/html",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "curated",
+      "url": "https://www.gutenberg.org/ebooks/84",
+      "status": 200,
+      "final_url": "https://www.gutenberg.org/ebooks/84",
+      "content_type": "text/html;charset=utf-8",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "curated",
+      "url": "https://www.gutenberg.org/ebooks/1342",
+      "status": 200,
+      "final_url": "https://www.gutenberg.org/ebooks/1342",
+      "content_type": "text/html;charset=utf-8",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "curated",
+      "url": "https://www.gutenberg.org/ebooks/1661",
+      "status": 200,
+      "final_url": "https://www.gutenberg.org/ebooks/1661",
+      "content_type": "text/html;charset=utf-8",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "curated",
+      "url": "https://www.archives.gov/exhibits/featured-documents/apollo-11-flight-plan",
+      "status": 200,
+      "final_url": "https://www.archives.gov/exhibits/featured-documents/apollo-11-flight-plan",
+      "content_type": "text/html; charset=utf-8",
+      "cors_origin": "origin",
+      "oversized": false
+    },
+    {
+      "type": "curated",
+      "url": "https://home.cern/science/computing/the-birth-of-the-web/",
+      "status": 200,
+      "final_url": "https://home.cern/science/computing/the-birth-of-the-web/",
+      "content_type": "text/html",
+      "cors_origin": "http://127.0.0.1:8080",
+      "oversized": false
+    },
+    {
+      "type": "curated",
+      "url": "https://eventhorizontelescope.org/press-release-april-10-2019-astronomers-capture-first-image-black-hole",
+      "status": 403,
+      "error": "HTTP rejection",
+      "final_url": "https://eventhorizontelescope.org/press-release-april-10-2019-astronomers-capture-first-image-black-hole"
+    },
+    {
+      "type": "curated",
+      "url": "https://www.nobelprize.org/prizes/chemistry/2020/summary/",
+      "status": 200,
+      "final_url": "https://www.nobelprize.org/prizes/chemistry/2020/summary/",
+      "content_type": "text/html; charset=UTF-8",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "curated",
+      "url": "https://arxiv.org/abs/1706.03762",
+      "status": 200,
+      "final_url": "https://arxiv.org/abs/1706.03762",
+      "content_type": "text/html; charset=utf-8",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "curated",
+      "url": "https://science.nasa.gov/mission/webb/first-images/",
+      "status": 404,
+      "error": "HTTP rejection",
+      "final_url": "https://science.nasa.gov/mission/webb/first-images/"
+    },
+    {
+      "type": "curated",
+      "url": "https://www.ligo.caltech.edu/page/what-are-gw",
+      "status": 200,
+      "final_url": "https://www.ligo.caltech.edu/page/what-are-gw",
+      "content_type": "text/html; charset=utf-8",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "curated",
+      "url": "https://oceanservice.noaa.gov/facts/coral.html",
+      "status": 200,
+      "final_url": "https://oceanservice.noaa.gov/facts/coral.html",
+      "content_type": "text/html",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "curated",
+      "url": "https://deepmind.google/research/breakthroughs/alphago/",
+      "status": 200,
+      "final_url": "https://deepmind.google/research/alphago/",
+      "content_type": "text/html",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "curated",
+      "url": "https://www.esa.int/Science_Exploration/Space_Science/Rosetta",
+      "status": 200,
+      "final_url": "https://www.esa.int/missions/about-us/directorates/science/rosetta/rosetta",
+      "content_type": "text/html; charset=UTF-8",
+      "cors_origin": null,
+      "oversized": false
+    },
+    {
+      "type": "api",
+      "name": "Open Library \u00b7 book discovery",
+      "url": "https://openlibrary.org/subjects/science.json?limit=6",
+      "status": 200,
+      "final_url": "https://openlibrary.org/subjects/science.json?limit=6",
+      "content_type": "application/json",
+      "cors_origin": "*",
+      "oversized": false,
+      "schema_keys": [
+        "key",
+        "name",
+        "subject_type",
+        "solr_query",
+        "work_count",
+        "works"
+      ]
+    },
+    {
+      "type": "api",
+      "name": "Library of Congress \u00b7 Today in History",
+      "url": "https://www.loc.gov/collections/today-in-history/?fo=json&c=6",
+      "status": 403,
+      "error": "HTTP rejection",
+      "final_url": "https://www.loc.gov/collections/today-in-history/?fo=json&c=6"
+    },
+    {
+      "type": "api",
+      "name": "AI news \u00b7 HN Search",
+      "url": "https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=6&query=artificial%20intelligence",
+      "status": 200,
+      "final_url": "https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=6&query=artificial%20intelligence",
+      "content_type": "application/json",
+      "cors_origin": "http://127.0.0.1:8080",
+      "oversized": false,
+      "schema_keys": [
+        "exhaustive",
+        "exhaustiveNbHits",
+        "exhaustiveTypo",
+        "hits",
+        "hitsPerPage",
+        "nbHits",
+        "nbPages",
+        "page",
+        "params",
+        "processingTimeMS",
+        "processingTimingsMS",
+        "query"
+      ]
+    },
+    {
+      "type": "api",
+      "name": "Computer science \u00b7 HN Search",
+      "url": "https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=6&query=computer%20science",
+      "status": 200,
+      "final_url": "https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=6&query=computer%20science",
+      "content_type": "application/json",
+      "cors_origin": "http://127.0.0.1:8080",
+      "oversized": false,
+      "schema_keys": [
+        "exhaustive",
+        "exhaustiveNbHits",
+        "exhaustiveTypo",
+        "hits",
+        "hitsPerPage",
+        "nbHits",
+        "nbPages",
+        "page",
+        "params",
+        "processingTimeMS",
+        "processingTimingsMS",
+        "query"
+      ]
+    },
+    {
+      "type": "api",
+      "name": "Europe PMC \u00b7 medical research",
+      "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&pageSize=6&resultType=lite&query=(TITLE_ABS%3Amedicine%20OR%20TITLE_ABS%3Aclinical)%20AND%20SRC%3AMED%20AND%20FIRST_PDATE%3A%5B2020-01-01%20TO%202026-11-09%5D%20sort_date%3Ay",
+      "status": 200,
+      "final_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&pageSize=6&resultType=lite&query=(TITLE_ABS%3Amedicine%20OR%20TITLE_ABS%3Aclinical)%20AND%20SRC%3AMED%20AND%20FIRST_PDATE%3A%5B2020-01-01%20TO%202026-11-09%5D%20sort_date%3Ay",
+      "content_type": "application/json;charset=UTF-8",
+      "cors_origin": "*",
+      "oversized": false,
+      "schema_keys": [
+        "version",
+        "hitCount",
+        "nextCursorMark",
+        "nextPageUrl",
+        "request",
+        "resultList"
+      ]
+    },
+    {
+      "type": "api",
+      "name": "Cybersecurity reports \u00b7 HN Search",
+      "url": "https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=6&query=breach",
+      "status": 200,
+      "final_url": "https://hn.algolia.com/api/v1/search_by_date?tags=story&hitsPerPage=6&query=breach",
+      "content_type": "application/json",
+      "cors_origin": "http://127.0.0.1:8080",
+      "oversized": false,
+      "schema_keys": [
+        "exhaustive",
+        "exhaustiveNbHits",
+        "exhaustiveTypo",
+        "hits",
+        "hitsPerPage",
+        "nbHits",
+        "nbPages",
+        "page",
+        "params",
+        "processingTimeMS",
+        "processingTimingsMS",
+        "query"
+      ]
+    },
+    {
+      "type": "api",
+      "name": "CISA \u00b7 exploited vulnerabilities",
+      "url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+      "status": 200,
+      "final_url": "https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+      "content_type": "application/json",
+      "cors_origin": null,
+      "oversized": false,
+      "schema_keys": [
+        "title",
+        "catalogVersion",
+        "dateReleased",
+        "count",
+        "vulnerabilities"
+      ]
+    },
+    {
+      "type": "api",
+      "name": "CISA \u00b7 exploited vulnerabilities",
+      "url": "https://raw.githubusercontent.com/cisagov/kev-data/develop/known_exploited_vulnerabilities.json",
+      "status": 200,
+      "final_url": "https://raw.githubusercontent.com/cisagov/kev-data/develop/known_exploited_vulnerabilities.json",
+      "content_type": "text/plain; charset=utf-8",
+      "cors_origin": "*",
+      "oversized": false,
+      "schema_keys": [
+        "title",
+        "catalogVersion",
+        "dateReleased",
+        "count",
+        "vulnerabilities"
+      ]
+    },
+    {
+      "type": "api",
+      "name": "Hacker News",
+      "url": "https://hacker-news.firebaseio.com/v0/topstories.json",
+      "status": 200,
+      "final_url": "https://hacker-news.firebaseio.com/v0/topstories.json",
+      "content_type": "application/json; charset=utf-8",
+      "cors_origin": "http://127.0.0.1:8080",
+      "oversized": false,
+      "schema": "array",
+      "records": 500
+    },
+    {
+      "type": "api",
+      "name": "Spaceflight News",
+      "url": "https://api.spaceflightnewsapi.net/v4/articles/?limit=6",
+      "status": 200,
+      "final_url": "https://api.spaceflightnewsapi.net/v4/articles/?limit=6",
+      "content_type": "application/json",
+      "cors_origin": "*",
+      "oversized": false,
+      "schema_keys": [
+        "count",
+        "next",
+        "previous",
+        "results"
+      ]
+    },
+    {
+      "type": "api",
+      "name": "USGS Earthquake Hazards",
+      "url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson",
+      "status": 200,
+      "final_url": "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_week.geojson",
+      "content_type": "application/json; charset=utf-8",
+      "cors_origin": "*",
+      "oversized": false,
+      "schema_keys": [
+        "type",
+        "metadata",
+        "features",
+        "bbox"
+      ]
+    },
+    {
+      "type": "api",
+      "name": "Crossref",
+      "url": "https://api.crossref.org/works?filter=type:journal-article,until-pub-date:2026-11-09&sort=published&order=desc&rows=5&select=DOI,title,published,container-title",
+      "status": 200,
+      "final_url": "https://api.crossref.org/works?filter=type:journal-article,until-pub-date:2026-11-09&sort=published&order=desc&rows=5&select=DOI,title,published,container-title",
+      "content_type": "application/json",
+      "cors_origin": "*",
+      "oversized": false,
+      "schema_keys": [
+        "status",
+        "message-type",
+        "message-version",
+        "message"
+      ]
+    }
+  ]
+}

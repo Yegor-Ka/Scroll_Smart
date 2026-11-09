@@ -1,0 +1,43 @@
+# Local secrets and credentials
+.env
+.env.*
+!.env.example
+!.env.*.example
+.aws/
+*.pem
+*.key
+*.p12
+*.pfx
+
+# Local agent state; retain the deployable hosting manifest
+.agents/
+.codex/
+**/.openai/**
+!**/.openai/
+!**/.openai/hosting.json
+
+# Python caches and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Dependencies, test output, and logs
+node_modules/
+coverage/
+*.log
+
+# Operating-system and editor temporary files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# dist/ contains this project's application source and stays tracked.
