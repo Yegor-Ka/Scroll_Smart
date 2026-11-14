@@ -1,5 +1,5 @@
 // All provider payloads and browser storage are untrusted input.
-export const TOPICS = ['All topics', 'Science', 'Technology', 'Space', 'Nature', 'Books', 'History', 'AI', 'Computer Science', 'Medicine', 'Cybersecurity'];
+export const TOPICS = ['All topics', 'Science', 'Technology', 'Space', 'Nature', 'Books', 'History', 'AI', 'Computer Science', 'Medicine', 'Cybersecurity', 'Psychology', 'Philosophy', 'Mathematics', 'Climate', 'Culture'];
 export const PROVIDERS = [
   {id:'books', name:'Open Library · book discovery', docs:'https://openlibrary.org/developers/api', description:'Science book suggestions with authors and publication years. Catalog entries are not reviews or personalized recommendations.'},
   {id:'history', name:'Library of Congress · Today in History', docs:'https://www.loc.gov/apis/json-and-yaml/', description:'Historical essays and archive entries. Archive dates are not current news dates.'},
@@ -34,7 +34,7 @@ export function normalizeCard(c){
   const rawDate=typeof c.date==='number'&&Number.isFinite(c.date)||typeof c.date==='string'&&c.date.length<=40?c.date:undefined;
   const date=new Date(rawDate).getTime();
   if(c.live&&(!Number.isFinite(date)||date<0||date>Date.now()+86400000))return null;
-  return {id,title,url,topic:c.topic,author:text(c.author,300),summary:text(c.summary,700),source:text(c.source,140),symbol:text(c.symbol,4),live:c.live===true,date:Number.isFinite(date)?date:undefined,year:Number.isInteger(c.year)&&c.year>=1000&&c.year<=2100?c.year:undefined,evergreen:c.evergreen===true,kind:['Book discovery','Reading note','History archive','Historical fact','Research update','Community news','Security advisory'].includes(c.kind)?c.kind:''};
+  return {id,title,url,topic:c.topic,author:text(c.author,300),summary:text(c.summary,700),source:text(c.source,140),symbol:text(c.symbol,4),live:c.live===true,date:Number.isFinite(date)?date:undefined,year:Number.isInteger(c.year)&&c.year>=1000&&c.year<=2100?c.year:undefined,evergreen:c.evergreen===true,kind:['Open article','Book discovery','Reading note','History archive','Historical fact','Research update','Community news','Security advisory'].includes(c.kind)?c.kind:''};
 }
 export function normalizeList(items){return Array.isArray(items)?items.slice(0,200).map(normalizeCard).filter(Boolean):[]}
 export function dedupe(items){const seen=new Set();return items.filter(c=>{const u=new URL(c.url);u.hash='';for(const key of [...u.searchParams.keys()])if(key.startsWith('utm_'))u.searchParams.delete(key);const key=u.href;if(seen.has(key))return false;seen.add(key);return true})}

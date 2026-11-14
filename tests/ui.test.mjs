@@ -17,7 +17,7 @@ test('source details also use DOM text assignment',()=>{
  const nodes=els.flatMap(descendants);assert.ok(!nodes.some(n=>n.tagName==='SCRIPT'||n.tagName==='IMG'));assert.equal(nodes.find(n=>n.tagName==='A').href,undefined);
 });
 test('application has no HTML parsing sinks, eval or dynamic script construction',async()=>{
- for(const file of ['../dist/app.js','../dist/ui.mjs','../dist/feed-core.mjs','../dist/reader.mjs']){
+ for(const file of ['../dist/app.js','../dist/ui.mjs','../dist/feed-core.mjs','../dist/reader.mjs','../dist/discovery.mjs','../dist/theme.js','../dist/home.mjs']){
   const source=await readFile(new URL(file,import.meta.url),'utf8');
   assert.doesNotMatch(source,/\.innerHTML\s*=|\.outerHTML\s*=|insertAdjacentHTML|document\.write|\beval\s*\(|new Function\s*\(/);
  }

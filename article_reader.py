@@ -13,14 +13,17 @@ import re
 import socket
 import ssl
 import time
+from pathlib import Path
+
+OPEN_ARTICLES = {row["id"]: row for row in json.loads((Path(__file__).parent / "open_articles.json").read_text())}
 
 import nh3
 from defusedxml import ElementTree
 from defusedxml.common import DefusedXmlException
 
-# Subset of existing feed/source domains. No wildcard or caller-controlled host.
+# Reviewed source domains. No wildcard or caller-controlled host.
 HOSTS = frozenset({'www.ebi.ac.uk', 'earthquake.usgs.gov', 'openlibrary.org',
-                   'raw.githubusercontent.com', 'oceanservice.noaa.gov'})
+                   'raw.githubusercontent.com', 'oceanservice.noaa.gov', 'en.wikipedia.org', 'en.wikivoyage.org'})
 MAX_BODY = 2 * 1024 * 1024
 MAX_TEXT = 120000
 USER_AGENT = 'ScrollSmartReader/1.0'
@@ -233,7 +236,7 @@ class TextBlocks(HTMLParser):
 
 
 def sanitize_blocks(fragment):
-    if not isinstance(fragment, str) or len(fragment) > MAX_TEXT * 4:
+    if not isinstance(fragment, str) or len(fragment) > MAX_BODY:
         raise ReaderError('Text too large')
     # Established HTML5 sanitizer removes executable/unwanted subtrees and ALL attrs/URLs.
     cleaned = nh3.clean(fragment, tags=BLOCK_TAGS, attributes={}, clean_content_tags=DROP_TAGS,
@@ -244,6 +247,48 @@ def sanitize_blocks(fragment):
     if len(parser.blocks) > 1000 or sum(len(x['text']) for x in parser.blocks) > MAX_TEXT:
         raise ReaderError('Text too large')
     return parser.blocks
+
+
+class WikiArticleText(HTMLParser):
+    """Remove navigation/reference furniture before the nh3 security boundary."""
+    OMIT = {'navbox', 'vertical-navbox', 'infobox', 'reflist', 'references',
+            'mw-references-wrap', 'sidebar', 'mw-editsection', 'toc', 'reference'}
+    VOID = {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}
+
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.skip = 0
+        self.fragments = []
+
+    def handle_starttag(self, tag, attrs):
+        omitted = bool(set(dict(attrs).get('class', '').split()) & self.OMIT)
+        if self.skip or omitted:
+            if tag not in self.VOID:
+                self.skip += 1
+        else:
+            self.fragments.append(self.get_starttag_text())
+
+    def handle_startendtag(self, tag, attrs):
+        if not self.skip and not (set(dict(attrs).get('class', '').split()) & self.OMIT):
+            self.fragments.append(self.get_starttag_text())
+
+    def handle_endtag(self, tag):
+        if tag in self.VOID:
+            return
+        if self.skip:
+            self.skip -= 1
+        else:
+            self.fragments.append('</'+tag+'>')
+
+    def handle_data(self, text):
+        if not self.skip:
+            self.fragments.append(text)
+
+    def handle_entityref(self, name):
+        self.handle_data('&'+name+';')
+
+    def handle_charref(self, name):
+        self.handle_data('&#'+name+';')
 
 
 class MainArticle(HTMLParser):
@@ -307,6 +352,7 @@ class ArticleReader:
         self.fetcher = fetcher or SafeFetcher()
         self.clock, self.lock = clock, Lock()
         self.cache, self.admissions = OrderedDict(), deque()
+        self.source_cooldowns = {}
         self.slots, self.inflight = BoundedSemaphore(4), set()
 
     def read(self, article_id):
@@ -315,7 +361,7 @@ class ArticleReader:
         # These are internal feed IDs, not paths, URLs, or client-provided destinations.
         curated = {'book-frankenstein','book-pride','book-holmes','history-apollo','history-web',
                    'blackhole','crispr','transformer','webb','waves','coral','alphago','rosetta'}
-        if article_id not in curated and not re.fullmatch(
+        if article_id not in curated and article_id not in OPEN_ARTICLES and not re.fullmatch(
                 r'(?:(?:hn|space|med)-[0-9]{1,15}|usgs-[A-Za-z0-9]{1,32}|'
                 r'cisa-CVE-[0-9]{4}-[0-9]{4,12}|book-OL[0-9]+W|'
                 r'doi-[A-Za-z0-9._:/-]+|loc-history-[A-Za-z0-9._-]+)', article_id):
@@ -326,6 +372,9 @@ class ArticleReader:
             if cached and cached[0] > now:
                 self.cache.move_to_end(article_id)
                 return cached[1]
+            source_host = OPEN_ARTICLES.get(article_id, {}).get('host')
+            if source_host and self.source_cooldowns.get(source_host, 0) > now:
+                return fallback('This source has asked us to slow down. Try again in two minutes or open the original.')
             while self.admissions and now-self.admissions[0] > 60:
                 self.admissions.popleft()
             if article_id in self.inflight or len(self.admissions) >= 20:
@@ -337,6 +386,13 @@ class ArticleReader:
         try:
             try:
                 value = self._read(article_id, time.monotonic()+18)
+            except UpstreamStatus as exc:
+                if exc.status == 429 and source_host:
+                    with self.lock:
+                        self.source_cooldowns[source_host] = self.clock()+120
+                    value = fallback('This source has asked us to slow down. Try again in two minutes or open the original.')
+                else:
+                    value = fallback('The source is temporarily unavailable or restricts automated access. Open the original to read it.')
             except (ReaderError, ValueError, TypeError, KeyError, ElementTree.ParseError,
                     DefusedXmlException, RecursionError, AttributeError, IndexError, UnicodeError):
                 value = fallback('The reader could not retrieve or safely process this source. It may be temporarily unavailable; try again or open the original.')
@@ -352,6 +408,27 @@ class ArticleReader:
             self.slots.release()
 
     def _read(self, ident, deadline):
+        if ident in OPEN_ARTICLES:
+            entry = OPEN_ARTICLES[ident]
+            host, title = entry['host'], entry['page']
+            # Titles and hosts are maintained locally, never supplied by the client.
+            data = self.fetcher.json('https://'+host+'/w/api.php?action=parse&format=json&formatversion=2&prop=text%7Crevid&disableeditsection=1&disabletoc=1&page='+quote(title, safe=''), deadline)
+            page = data.get('parse', {})
+            if page.get('title') != title or not isinstance(page.get('revid'), int) or page['revid'] <= 0:
+                return fallback('This article changed or could not be verified. Open the original source.')
+            fragment = page.get('text')
+            if not isinstance(fragment, str) or len(fragment) > MAX_BODY:
+                raise ReaderError('Invalid article body')
+            article = WikiArticleText()
+            article.feed(fragment)
+            if article.skip:
+                raise ReaderError('Incomplete article structure')
+            blocks = sanitize_blocks(''.join(article.fragments))
+            return result(blocks, 'full', entry['source']+' contributors',
+                          author=entry['source']+' contributors',
+                          originalUrl='https://'+host+'/w/index.php?oldid='+str(page['revid']),
+                          license='https://creativecommons.org/licenses/by-sa/4.0/',
+                          reason='Main article text adapted under CC BY-SA 4.0. Images, equations, reference lists, navigation, and infoboxes are omitted. Open the original revision for these and contributor history. Community-edited content can contain errors.')
         if re.fullmatch(r'med-[0-9]{1,12}', ident):
             pmid = ident[4:]
             data = self.fetcher.json('https://www.ebi.ac.uk/europepmc/webservices/rest/search?format=json&resultType=core&query='+quote('EXT_ID:'+pmid+' AND SRC:MED'), deadline)

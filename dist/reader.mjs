@@ -1,3 +1,4 @@
+import {OPEN_ARTICLES} from './discovery.mjs';
 import {safeUrl} from './feed-core.mjs';
 import {node} from './ui.mjs';
 
@@ -31,13 +32,26 @@ export function renderReader(doc,container,{item,payload=null,loading=false,save
  if(href){original.href=href;original.target='_blank';original.rel='noopener noreferrer';original.referrerPolicy='no-referrer';original.title=href}
  paper.append(original,node(doc,'p','reader-domain',href?new URL(href).hostname:''));
  const notice=node(doc,'div','reader-notice');notice.setAttribute('role','status');
- notice.textContent=loading?'Loading the approved source…':payload?.mode==='full'?'Full source text · attribution retained':payload?.mode==='record'?'Official source record · not a full news article':payload?.mode==='description'?'Catalog description · not the complete book':'Excerpt only · the full article could not be retrieved';
+ notice.textContent=loading?'Loading the approved source…':payload?.mode==='full'?'Main article text · attribution retained':payload?.mode==='record'?'Official source record · not a full news article':payload?.mode==='description'?'Catalog description · not the complete book':'Excerpt only · the full article could not be retrieved';
  paper.append(notice);
  if(payload?.reason&&!loading)paper.append(node(doc,'p','reader-explanation',payload.reason));
  const content=node(doc,'div','reader-body');content.setAttribute('aria-busy',String(loading));
  if(loading){const skeleton=node(doc,'div','reader-skeleton');skeleton.setAttribute('aria-hidden','true');skeleton.append(node(doc,'span'),node(doc,'span'),node(doc,'span'));content.append(skeleton)}
- else for(const block of bodyBlocks)content.append(node(doc,block.type,'',block.text));
+ else {
+  const sections=[];
+  for(const [index,block] of bodyBlocks.entries()){
+   const el=node(doc,block.type,'',block.text);
+   if(block.type==='h2'){el.id='reader-section-'+index;sections.push({id:el.id,text:block.text})}
+   content.append(el);
+  }
+  if(sections.length>1){const toc=node(doc,'details','reader-toc');toc.append(node(doc,'summary','','In this article · '+sections.length+' sections'));
+   for(const section of sections){const b=node(doc,'button','',section.text);b.type='button';b.onclick=()=>{const target=doc.getElementById(section.id);target?.scrollIntoView({behavior:'smooth',block:'start'});};toc.append(b)}
+   paper.append(toc);
+  }
+ }
  paper.append(content);
+ const entry=OPEN_ARTICLES.find(c=>c.id===item.id);
+ if(entry&&!loading){const reflection=node(doc,'aside','reader-reflection');reflection.append(node(doc,'p','eyebrow','MAKE IT YOURS'),node(doc,'p','',entry.prompt));paper.append(reflection)}
  if(payload?.source)paper.append(node(doc,'p','reader-attribution','Text provided by '+payload.source+'.'));
  if(payload?.license){const license=node(doc,'a','reader-license','Source license / reuse terms ↗');license.href=payload.license;license.target='_blank';license.rel='noopener noreferrer';paper.append(license)}
  const hint=node(doc,'p','reader-gesture-hint','Double-click or double-tap the reading area to save or unsave. Focus the reading area and press S.');hint.id='reader-gesture-hint';paper.append(hint);
@@ -49,7 +63,12 @@ export async function requestArticle(id,signal,fetcher=fetch){
  // Same-origin ID-only endpoint. Never fetch item.url or publisher pages in the browser.
  const r=await fetcher('/api/reader?id='+encodeURIComponent(id),{signal,credentials:'omit',referrerPolicy:'no-referrer',redirect:'error',headers:{Accept:'application/json'}});
  if(!r.ok||!r.headers.get('content-type')?.includes('application/json'))throw Error('Reader unavailable');
- const raw=await r.text();if(raw.length>512000)throw Error('Reader response too large');
+ const limit=512000;
+ if(Number(r.headers.get('content-length'))>limit||!r.body)throw Error('Reader response too large');
+ const stream=r.body.getReader(),chunks=[];let size=0;
+ try{while(true){const {done,value}=await stream.read();if(done)break;size+=value.byteLength;if(size>limit)throw Error('Reader response too large');chunks.push(value)}}finally{await stream.cancel()}
+ const bytes=new Uint8Array(size);let offset=0;for(const chunk of chunks){bytes.set(chunk,offset);offset+=chunk.byteLength}
+ const raw=new TextDecoder().decode(bytes);
  const payload=readerPayload(JSON.parse(raw));if(!payload)throw Error('Invalid reader response');return payload;
 }
 
@@ -80,12 +99,29 @@ export function createArticleReader({doc,win,dialog,content,isSaved,onSave,onOpe
   controller=new AbortController();const thisController=controller;
   const timeout=win.setTimeout(()=>thisController.abort(),22000);
   try{const data=await request(item.id,thisController.signal);if(requestSequence===sequence&&current?.id===item.id){payload=readerPayload(data);loading=false;draw()}}
-  catch{if(requestSequence===sequence&&current?.id===item.id){payload={mode:'excerpt',blocks:[],reason:'The article reader service could not be reached or returned an invalid response. Read the excerpt or open the original; local full text requires the Python app server.'};loading=false;draw()}}
+  catch{if(requestSequence===sequence&&current?.id===item.id){payload={mode:'excerpt',blocks:[],reason:'The reader is temporarily unavailable. Try again shortly or read the original source.'};loading=false;draw()}}
   finally{win.clearTimeout(timeout)}
  }
  doc.addEventListener('click',e=>{
   if(!current)return;
   if(e.target.closest?.('[data-reader-close]'))back();
+ });
+ let backdropPress=null;
+ const outside=e=>{
+  if(e.target!==dialog)return false;
+  const r=dialog.getBoundingClientRect();
+  return e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom;
+ };
+ dialog.addEventListener('pointerdown',e=>{
+  backdropPress=current&&e.button===0&&e.isPrimary!==false&&outside(e)?{x:e.clientX,y:e.clientY}:null;
+ });
+ dialog.addEventListener('pointermove',e=>{
+  if(backdropPress&&Math.hypot(e.clientX-backdropPress.x,e.clientY-backdropPress.y)>8)backdropPress=null;
+ },{passive:true});
+ dialog.addEventListener('pointercancel',()=>{backdropPress=null});
+ dialog.addEventListener('click',e=>{
+  const dismiss=backdropPress&&outside(e);backdropPress=null;
+  if(dismiss&&current)back();
  });
  dialog.addEventListener('cancel',e=>{e.preventDefault();back()});
  doc.addEventListener('scroll',()=>cancelPending(),{passive:true,capture:true});
