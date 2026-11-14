@@ -2,6 +2,8 @@
 
 A responsive personal learning feed for desktop and mobile. It includes topic filters, selected milestones since 2016, original-source attribution, a device-local saved collection, a five-story daily learning quest, spaced takeaway reviews, curiosity chains, and an in-app article reader. It is a web app, not a native iOS/Android app.
 
+The Scroll Smart logo and favicon were generated with AI and selected for this project. They are not affiliated with or endorsed by any third party.
+
 ## Local setup and run
 
 From the repository root, with Python 3.10+ on Unix and Node.js 22+ for tests:
