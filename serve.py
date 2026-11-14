@@ -17,6 +17,7 @@ PUBLIC_FILES = {
     '/feed-core.mjs': ('feed-core.mjs', 'text/javascript; charset=utf-8'),
     '/home.mjs': ('home.mjs', 'text/javascript; charset=utf-8'),
     '/discovery.mjs': ('discovery.mjs', 'text/javascript; charset=utf-8'),
+    '/learning.mjs': ('learning.mjs', 'text/javascript; charset=utf-8'),
     '/theme.js': ('theme.js', 'text/javascript; charset=utf-8'),
     '/reader.mjs': ('reader.mjs', 'text/javascript; charset=utf-8'),
     '/ui.mjs': ('ui.mjs', 'text/javascript; charset=utf-8'),

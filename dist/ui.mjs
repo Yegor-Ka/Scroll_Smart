@@ -43,6 +43,16 @@ export function sourceNodes(doc,providers,states){
  const info=node(doc,'div','source-card');info.append(node(doc,'h3','','How updates work'),node(doc,'p','','Refresh on opening, every 15 minutes while visible, and on returning after 15 minutes. Use Refresh feed for an immediate check (at most once every 30 seconds). Failed providers retain previous results, which may be out of date. No updates run while closed. Your browser contacts providers directly; they receive your IP address. Saved stories stay on this device.'));nodes.push(info);return nodes;
 }
 
+export function takeawayCardNode(doc,record,{due=false}={}){
+ const article=node(doc,'article','review-card'+(record.completed?' review-complete':''));article.dataset.takeawayId=record.articleId;
+ article.append(node(doc,'p','eyebrow',record.completed?'REVIEW COMPLETE':due?'DUE FOR REVIEW':'IN YOUR LIBRARY'),node(doc,'h3','',record.title),node(doc,'p','review-source',record.source+' · '+record.topic+(record.articleDate?' · '+record.articleDate:'')));
+ const quote=node(doc,'blockquote','review-note',record.note);article.append(quote);
+ const original=link(doc,'Open original article ↗',record.url,'review-original');article.append(original);
+ if(!record.completed&&due){const answers=node(doc,'div','review-answers');for(const [answer,label] of [['remember','I remember'],['partly','Partly'],['again','Review again']]){const button=node(doc,'button','',label);button.type='button';button.dataset.reviewAnswer=answer;button.dataset.reviewId=record.articleId;answers.append(button)}article.append(answers)}
+ const edit=node(doc,'details','review-edit'),summary=node(doc,'summary','','Edit takeaway');edit.append(summary);const field=node(doc,'textarea','review-edit-note');field.value=record.note;field.maxLength=280;field.rows=3;field.dataset.editTakeaway=record.articleId;const actions=node(doc,'div','takeaway-actions'),save=node(doc,'button','','Save changes'),remove=node(doc,'button','takeaway-delete','Delete');save.type=remove.type='button';save.dataset.updateTakeaway=record.articleId;remove.dataset.deleteTakeaway=record.articleId;actions.append(save,remove);edit.append(field,actions);article.append(edit);
+ return article;
+}
+
 // Delegated gestures survive feed redraws. No timers or synthetic clicks required.
 export function bindCardSaving(root,onSave){
  let active=null,lastTap=null,lastTouchHandled=null;

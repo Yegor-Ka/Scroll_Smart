@@ -12,7 +12,7 @@ export function readerPayload(data){
  return {mode:data.mode,blocks,reason:text(data.reason,500),author:text(data.author,300),date:text(data.date,40),source:text(data.source,140),license:safeUrl(data.license)||'',originalUrl:safeUrl(data.originalUrl)||'',image:null};
 }
 
-export function renderReader(doc,container,{item,payload=null,loading=false,saved=false}){
+export function renderReader(doc,container,{item,payload=null,loading=false,saved=false,explored=false,takeaway=null,recommendations=[]}){
  const paper=node(doc,'article','reader-paper');paper.dataset.cardId=item.id;paper.tabIndex=0;
  paper.setAttribute('aria-label',item.title);paper.setAttribute('aria-describedby','reader-gesture-hint');
  const tools=node(doc,'div','reader-tools'),back=node(doc,'button','reader-back','← Back to feed');back.type='button';back.dataset.readerClose='';
@@ -54,6 +54,27 @@ export function renderReader(doc,container,{item,payload=null,loading=false,save
  if(entry&&!loading){const reflection=node(doc,'aside','reader-reflection');reflection.append(node(doc,'p','eyebrow','MAKE IT YOURS'),node(doc,'p','',entry.prompt));paper.append(reflection)}
  if(payload?.source)paper.append(node(doc,'p','reader-attribution','Text provided by '+payload.source+'.'));
  if(payload?.license){const license=node(doc,'a','reader-license','Source license / reuse terms ↗');license.href=payload.license;license.target='_blank';license.rel='noopener noreferrer';paper.append(license)}
+ if(!loading){
+  const remember=node(doc,'section','reader-remember');remember.setAttribute('aria-labelledby','remember-title');
+  const rememberTitle=node(doc,'h2','',explored?'Keep one idea':'Finished exploring?');rememberTitle.id='remember-title';remember.append(rememberTitle);
+  if(!explored){
+   remember.append(node(doc,'p','','Completion is your choice. Opening an article never completes today’s quest.'));
+   const mark=node(doc,'button','reader-explored','Mark as explored');mark.type='button';mark.dataset.markExplored=item.id;remember.append(mark);
+  }else{
+   remember.append(node(doc,'p','reader-explored-state','✓ Marked as explored. Add an optional takeaway in your own words.'));
+   const label=node(doc,'label','takeaway-label','Your takeaway');label.setAttribute('for','takeaway-note');
+   const input=node(doc,'textarea','takeaway-note');input.id='takeaway-note';input.dataset.takeawayNote=item.id;input.maxLength=280;input.rows=3;input.value=takeaway?.note||'';input.placeholder='What do you want to remember?';
+   const actions=node(doc,'div','takeaway-actions'),saveNote=node(doc,'button','',takeaway?'Update takeaway':'Save takeaway');saveNote.type='button';saveNote.dataset.saveTakeaway=item.id;actions.append(saveNote);
+   if(takeaway){const remove=node(doc,'button','takeaway-delete','Delete');remove.type='button';remove.dataset.deleteTakeaway=item.id;actions.append(remove)}
+   const status=node(doc,'p','takeaway-status');status.id='takeaway-status';status.setAttribute('role','status');remember.append(label,input,node(doc,'small','',`Plain text · ${280} characters maximum`),actions,status);
+  }
+  paper.append(remember);
+ }
+ if(!loading&&recommendations.length){
+  const chain=node(doc,'section','curiosity-chain');chain.setAttribute('aria-labelledby','curiosity-chain-title');const heading=node(doc,'h2','','Where could this lead?');heading.id='curiosity-chain-title';
+  chain.append(heading,node(doc,'p','chain-note','Suggestions are based on topics and sources, not an AI profile.'));
+  const list=node(doc,'div','chain-list');for(const suggestion of recommendations.slice(0,3)){const button=node(doc,'button','chain-card');button.type='button';button.dataset.recommend=suggestion.item.id;button.append(node(doc,'span','chain-kind',suggestion.label),node(doc,'strong','',suggestion.item.title),node(doc,'small','',suggestion.item.topic+' · '+suggestion.item.source));list.append(button)}chain.append(list);paper.append(chain);
+ }
  const hint=node(doc,'p','reader-gesture-hint','Double-click or double-tap the reading area to save or unsave. Focus the reading area and press S.');hint.id='reader-gesture-hint';paper.append(hint);
  container.replaceChildren(paper);
  return paper;
@@ -72,13 +93,13 @@ export async function requestArticle(id,signal,fetcher=fetch){
  const payload=readerPayload(JSON.parse(raw));if(!payload)throw Error('Invalid reader response');return payload;
 }
 
-export function createArticleReader({doc,win,dialog,content,isSaved,onSave,onOpen,request=requestArticle}){
+export function createArticleReader({doc,win,dialog,content,isSaved,onSave,onOpen,onExplore=()=>{},isExplored=()=>false,getTakeaway=()=>null,onTakeaway=()=>({ok:true}),onDeleteTakeaway=()=>{},getRecommendations=()=>[],resolveItem=()=>null,request=requestArticle}){
  let current=null,payload=null,loading=false,controller=null,previous=null,opener=null,pending=null,suppressed=null,sequence=0,closing=false;
  const draw=()=>{
   if(!current)return;
   const active=doc.activeElement,hadFocus=content.contains?.(active);
   const selector=active?.dataset.save?'[data-save]':active?.dataset.readerClose!==undefined?'[data-reader-close]':active?.className==='reader-original'?'.reader-original':null;
-  const paper=renderReader(doc,content,{item:current,payload,loading,saved:isSaved(current.id)});
+  const paper=renderReader(doc,content,{item:current,payload,loading,saved:isSaved(current.id),explored:isExplored(current.id),takeaway:getTakeaway(current.id),recommendations:loading?[]:getRecommendations(current)});
   if(hadFocus)(selector?content.querySelector(selector):paper)?.focus({preventScroll:true});
  };
  const cancelPending=(id=null)=>{if(pending!==null){win.clearTimeout(pending);pending=null}if(id)suppressed={id,until:Date.now()+700}};
@@ -105,6 +126,10 @@ export function createArticleReader({doc,win,dialog,content,isSaved,onSave,onOpe
  doc.addEventListener('click',e=>{
   if(!current)return;
   if(e.target.closest?.('[data-reader-close]'))back();
+  const mark=e.target.closest?.('[data-mark-explored]');if(mark&&mark.dataset.markExplored===current.id){onExplore(current);draw();return}
+  const saveNote=e.target.closest?.('[data-save-takeaway]');if(saveNote&&saveNote.dataset.saveTakeaway===current.id){const field=content.querySelector?.('[data-takeaway-note]'),status=content.querySelector?.('#takeaway-status');const result=onTakeaway(current,field?.value||'');if(status)status.textContent=result?.message||'';if(result?.ok)draw();return}
+  const deleteNote=e.target.closest?.('[data-delete-takeaway]');if(deleteNote&&deleteNote.dataset.deleteTakeaway===current.id){onDeleteTakeaway(current.id);draw();return}
+  const recommendation=e.target.closest?.('[data-recommend]');if(recommendation){const item=resolveItem(recommendation.dataset.recommend);if(item)open(item,recommendation);return}
  });
  let backdropPress=null;
  const outside=e=>{

@@ -5,15 +5,16 @@ import {readFile} from 'node:fs/promises';
 import vm from 'node:vm';
 import * as core from '../dist/feed-core.mjs';
 import * as ui from '../dist/ui.mjs';
-import {Element,eventRegistry,browserWindow} from './dom.mjs';
+import {Element,eventRegistry,browserWindow,descendants} from './dom.mjs';
 import * as discovery from '../dist/discovery.mjs';
 import * as readerUI from '../dist/reader.mjs';
+import * as learningUI from '../dist/learning.mjs';
 test('app starts with malformed storage, handles refresh failure, and navigates safely',async()=>{
  const elements=new Map();const events=eventRegistry(),listeners=events.registry;
  const element=key=>{if(!elements.has(key))elements.set(key,new Element('div'));return elements.get(key)};
  let callbacks;
  class Controller extends core.FeedController{constructor(options){super({...options,load:async()=>{throw Error('offline')}});callbacks=this}}
- const context=vm.createContext({console,Date,URL,Set,Map,Promise,JSON,Number,String,Array,localStorage:{getItem:key=>key==='ss-progress'?'null':'[null,{"topic":"Science\\\" onclick=evil","id":"x"}]',setItem(){}},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...discovery,...homeUI,window:browserWindow(),FeedController:Controller});
+ const context=vm.createContext({console,Date,URL,Set,Map,Promise,JSON,Number,String,Array,localStorage:{getItem:key=>key==='ss-progress'?'null':'[null,{"topic":"Science\\\" onclick=evil","id":"x"}]',setItem(){}},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...learningUI,...discovery,...homeUI,window:browserWindow(),FeedController:Controller});
  let source=await readFile(new URL('../dist/app.js',import.meta.url),'utf8');source=source.replace(/^import .*?;\n/gm,'');
  vm.runInContext(source,context);await new Promise(r=>setImmediate(r));
  listeners.click({target:{closest:s=>s==='[data-view]'?{dataset:{view:'feed'}}:null}});
@@ -36,7 +37,7 @@ test('oversized stored JSON is rejected before parsing and invalid UI actions ar
  const element=key=>{if(!elements.has(key))elements.set(key,new Element('div'));return elements.get(key)};
  class Controller extends core.FeedController{constructor(options){super({...options,load:async()=>[]})}}
  const oversized=' '.repeat(1024*1024+1);
- const context=vm.createContext({Date,URL,Set,Map,Promise,Number,String,Array,JSON:{...JSON,parse:value=>{if(value.length>1024*1024)largeParsed=true;return JSON.parse(value)},stringify:JSON.stringify},localStorage:{getItem:()=>oversized,setItem(){}},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...discovery,...homeUI,window:browserWindow(),FeedController:Controller});
+ const context=vm.createContext({Date,URL,Set,Map,Promise,Number,String,Array,JSON:{...JSON,parse:value=>{if(value.length>1024*1024)largeParsed=true;return JSON.parse(value)},stringify:JSON.stringify},localStorage:{getItem:()=>oversized,setItem(){}},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...learningUI,...discovery,...homeUI,window:browserWindow(),FeedController:Controller});
  const source=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*?;\n/gm,'');
  vm.runInContext(source,context);await new Promise(r=>setImmediate(r));assert.equal(largeParsed,false);
  const before=element('#feed').textContent;
@@ -51,7 +52,7 @@ test('quick saving toggles, persists across reloads, and supports bookmark remov
  async function launch(){
   const elements=new Map(),events=eventRegistry(),listeners=events.registry;const element=key=>{if(!elements.has(key))elements.set(key,new Element('div'));return elements.get(key)};
   class Controller extends core.FeedController{constructor(options){super({...options,load:async()=>[]})}}
-  const context=vm.createContext({Date,URL,Set,Map,Promise,JSON,Number,String,Array,localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...discovery,...homeUI,window:browserWindow(),FeedController:Controller});
+  const context=vm.createContext({Date,URL,Set,Map,Promise,JSON,Number,String,Array,localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...learningUI,...discovery,...homeUI,window:browserWindow(),FeedController:Controller});
   const source=(await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*?;\n/gm,'');vm.runInContext(source,context);await new Promise(r=>setImmediate(r));return {element,listeners};
  }
  const first=await launch();const target={closest:selector=>selector==='[data-card-id]'?{dataset:{cardId:'blackhole'}}:null};
@@ -70,7 +71,7 @@ test('Read here opens the reader, counts the daily idea once, and bookmark toggl
  class Controller extends core.FeedController{constructor(options){super({...options,load:async()=>[]})}}
  const win=browserWindow();win.scrollY=430;
  const createReader=options=>readerUI.createArticleReader({...options,request:async()=>({mode:'full',source:'Test source',blocks:[{type:'p',text:'An approved article body.'}]})});
- const context=vm.createContext({Date,URL,Set,Map,Promise,JSON,Number,String,Array,localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...discovery,...homeUI,createArticleReader:createReader,window:win,FeedController:Controller});
+ const context=vm.createContext({Date,URL,Set,Map,Promise,JSON,Number,String,Array,localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...learningUI,...discovery,...homeUI,createArticleReader:createReader,window:win,FeedController:Controller});
  vm.runInContext((await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*?;\n/gm,''),context);await new Promise(r=>setImmediate(r));
  const open={target:{closest:s=>s==='[data-open]'?{dataset:{open:'blackhole'}}:null}};listeners.click(open);await new Promise(r=>setImmediate(r));
  assert.equal(element('#reader').open,true);assert.match(element('#reader-content').textContent,/approved article body/);assert.equal(element('#read-count').textContent,'1');
@@ -81,7 +82,7 @@ test('Read here opens the reader, counts the daily idea once, and bookmark toggl
 test('discovery controls search, select a trail, reset, and clear when navigating',async()=>{
  const elements=new Map(),events=eventRegistry();const element=key=>{if(!elements.has(key))elements.set(key,new Element('div'));return elements.get(key)};
  class Controller extends core.FeedController{constructor(options){super({...options,load:async()=>[]})}}
- const context=vm.createContext({Date,URL,Set,Map,Promise,JSON,Number,String,Array,localStorage:{getItem:()=>null,setItem(){}},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...discovery,...homeUI,window:browserWindow(),FeedController:Controller});
+ const context=vm.createContext({Date,URL,Set,Map,Promise,JSON,Number,String,Array,localStorage:{getItem:()=>null,setItem(){}},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...learningUI,...discovery,...homeUI,window:browserWindow(),FeedController:Controller});
  vm.runInContext((await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*?;\n/gm,''),context);await new Promise(r=>setImmediate(r));
  element('#home-browse').onclick();
  element('#search').oninput({target:{value:'memory'}});
@@ -97,7 +98,7 @@ test('discovery controls search, select a trail, reset, and clear when navigatin
 test('welcome is the default screen and topic selection opens the matching feed',async()=>{
  const elements=new Map(),events=eventRegistry();const element=key=>{if(!elements.has(key))elements.set(key,new Element('div'));return elements.get(key)};
  class Controller extends core.FeedController{constructor(options){super({...options,load:async()=>[]})}}
- const context=vm.createContext({Date,URL,Set,Map,Promise,JSON,Number,String,Array,localStorage:{getItem:()=>null,setItem(){}},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...discovery,...homeUI,window:browserWindow(),FeedController:Controller});
+ const context=vm.createContext({Date,URL,Set,Map,Promise,JSON,Number,String,Array,localStorage:{getItem:()=>null,setItem(){}},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...learningUI,...discovery,...homeUI,window:browserWindow(),FeedController:Controller});
  vm.runInContext((await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*?;\n/gm,''),context);await new Promise(r=>setImmediate(r));
  assert.equal(element('#home-screen').hidden,false);assert.equal(element('.layout').hidden,true);
  element('#home-topics').children.find(b=>b.dataset.learnTopic==='Psychology').onclick();
@@ -105,4 +106,20 @@ test('welcome is the default screen and topic selection opens the matching feed'
  events.registry.click({target:{closest:s=>s==='[data-view]'?{dataset:{view:'home'}}:null}});
  assert.equal(element('#home-screen').hidden,false);assert.equal(element('.layout').hidden,true);
  element('#home-browse').onclick();assert.equal(element('.layout').hidden,false);assert.match(element('#feed').textContent,/Frankenstein/);
+});
+
+test('quest and review navigation use one persisted local quest and an explanatory zero state',async()=>{
+ const storage=new Map();
+ async function launch(){
+  const elements=new Map(),events=eventRegistry(),element=key=>{if(!elements.has(key))elements.set(key,new Element('div'));return elements.get(key)};
+  class Controller extends core.FeedController{constructor(options){super({...options,load:async()=>[]})}}
+  const context=vm.createContext({Date,URL,Set,Map,Promise,JSON,Number,String,Array,localStorage:{getItem:key=>storage.get(key)??null,setItem:(key,value)=>storage.set(key,value)},document:{createElement:tag=>new Element(tag),querySelector:element,querySelectorAll:()=>[],addEventListener:events.addEventListener,hidden:false},setInterval(){},...core,...ui,...readerUI,...learningUI,...discovery,...homeUI,window:browserWindow(),FeedController:Controller});
+  vm.runInContext((await readFile(new URL('../dist/app.js',import.meta.url),'utf8')).replace(/^import .*?;\n/gm,''),context);await new Promise(resolve=>setImmediate(resolve));return {element,events};
+ }
+ const first=await launch();first.events.registry.click({target:{closest:selector=>selector==='[data-view]'?{dataset:{view:'quest'}}:null}});const initial=JSON.parse(storage.get('ss-learning-v1')).currentQuest;
+ assert.equal(initial.items.length,5);assert.match(first.element('#feed').textContent,/Follow five sparks into the unknown/);assert.match(first.element('#feed').textContent,/0 of 5 sparks collected/);
+ const routeSteps=descendants(first.element('#feed')).filter(node=>node.dataset.questOpen);assert.equal(routeSteps.length,5);assert.equal(first.element('#discover-hero').hidden,true);assert.equal(first.element('#feed-heading').hidden,true);assert.equal(first.element('.right').hidden,true);
+ first.events.registry.click({target:{closest:selector=>selector==='[data-quest-open]'?routeSteps[0]:null}});await new Promise(resolve=>setImmediate(resolve));assert.equal(first.element('#reader').open,true);
+ const second=await launch();second.events.registry.click({target:{closest:selector=>selector==='[data-view]'?{dataset:{view:'quest'}}:null}});assert.deepEqual(JSON.parse(storage.get('ss-learning-v1')).currentQuest.items.map(item=>item.id),initial.items.map(item=>item.id));
+ second.events.registry.click({target:{closest:selector=>selector==='[data-view]'?{dataset:{view:'review'}}:null}});assert.match(second.element('#feed').textContent,/Turn reading into something you keep/);
 });

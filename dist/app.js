@@ -1,8 +1,9 @@
 import {createHome} from './home.mjs';
 import {OPEN_ARTICLES, OPEN_IDS, TRAILS, selectDiscoveries, interleaveDiscoveries} from './discovery.mjs';
 import {TOPICS, PROVIDERS, normalizeList, FeedController, dedupe} from './feed-core.mjs';
-import {node, cardNode, sourceNodes, bindCardSaving, createLazyFeed} from './ui.mjs';
+import {node, cardNode, sourceNodes, takeawayCardNode, bindCardSaving, createLazyFeed} from './ui.mjs';
 import {createArticleReader} from './reader.mjs';
+import {LEARNING_STORAGE_KEY,localDayKey,parseLearningState,rememberTopic,ensureDailyQuest,markQuestExplored,weekHistory,saveTakeaway,deleteTakeaway,reviewTakeaway,dueTakeaways,curiosityChains} from './learning.mjs';
 const curated=[...OPEN_ARTICLES,
 {id:'book-frankenstein',topic:'Books',evergreen:true,kind:'Reading note',title:'Frankenstein: ambition is only half the story',summary:'Scroll Smart mini-review: the compelling question is what a creator owes a creation. The novel rewards readers interested in responsibility, rejection, and the social cost of invention. Best for: science ethics and reflective fiction. The nested narration and older prose take patience. Try one chapter, then ask whose account you trust. This is an original editorial note, not a community rating.',source:'Scroll Smart reading note · Mary Shelley',url:'https://www.gutenberg.org/ebooks/84',symbol:'▤'},
 {id:'book-pride',topic:'Books',evergreen:true,kind:'Reading note',title:'Pride and Prejudice: practice changing your mind',summary:'Scroll Smart mini-review: Austen makes social perception entertaining and unreliable. The sharp dialogue invites you to notice how confidence, money, and first impressions shape judgment. Best for: readers who enjoy character and social observation. The slow build may not suit an action-first mood. Read a chapter and track one assumption a character makes.',source:'Scroll Smart reading note · Jane Austen',url:'https://www.gutenberg.org/ebooks/1342',symbol:'▤'},
@@ -21,18 +22,22 @@ const $=s=>document.querySelector(s);const topics=TOPICS;let view='home',topic='
 function getLocal(k,fallback){try{const raw=localStorage.getItem(k);return typeof raw==='string'&&raw.length<=1024*1024?JSON.parse(raw)??fallback:fallback}catch{return fallback}}function persist(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch{return false}}
 let reader=null,home=null;
 let saved=normalizeList(getLocal('ss-saved',[]));
+let learning=(()=>{try{return parseLearningState(localStorage.getItem(LEARNING_STORAGE_KEY))}catch{return parseLearningState(null)}})();
+const saveLearning=()=>persist(LEARNING_STORAGE_KEY,learning);
+learning=ensureDailyQuest(learning,curated);saveLearning();
 const day=()=>new Date().toLocaleDateString('en-CA');
 let progress=getLocal('ss-progress',{});
 function resetDay(){if(!progress||progress.date!==day()||!Array.isArray(progress.ids))progress={date:day(),ids:[]};progress.ids=[...new Set(progress.ids.slice(0,200).filter(v=>typeof v==='string'&&v.length<=100))].slice(0,200)}
 resetDay();
 $('#date').textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
-function stats(){resetDay();$('#save-count').textContent=saved.length;$('#read-count').textContent=progress.ids.length;$('#progress').value=Math.min(5,progress.ids.length);$('#goal-note').textContent=progress.ids.length>=5?'Daily goal reached. Let an idea sink in — you’ve earned a pause.':'Five ideas. A fresh perspective. That’s a good day of scrolling.'}
+function stats(){resetDay();const questDone=learning.currentQuest?.completedIds.length||0;$('#save-count').textContent=saved.length;$('#quest-count').textContent=questDone+'/5';$('#review-count').textContent=dueTakeaways(learning).length;$('#read-count').textContent=progress.ids.length;$('#progress').value=Math.min(5,progress.ids.length);$('#goal-note').textContent=progress.ids.length>=5?'Daily goal reached. Let an idea sink in — you’ve earned a pause.':'Five ideas. A fresh perspective. That’s a good day of scrolling.'}
 function announce(message){$('#save-feedback-message').textContent=message;$('#save-feedback').hidden=false;}
 function saveStory(id){
  const item=[...live,...curated,...saved,...(reader?.item?[reader.item]:[])].find(c=>c.id===id);if(!item)return;
  const exists=saved.some(c=>c.id===id);
  if(!exists&&saved.length>=200){announce('Your collection is full. Remove a saved story to make room.');return}
  saved=exists?saved.filter(c=>c.id!==id):[...saved,item];
+ learning.takeaways=learning.takeaways.map(record=>record.articleId===id?{...record,saved:!exists}:record);saveLearning();
  const restoreCardFocus=!reader?.isOpen&&document.activeElement?.dataset.cardId===id;
  const durable=persist('ss-saved',saved);render();reader?.updateSaved();
  if(restoreCardFocus){const replacement=[...document.querySelectorAll('[data-card-id]')].find(el=>el.dataset.cardId===id);replacement?.focus({preventScroll:true})}
@@ -43,12 +48,36 @@ const lazyFeed=createLazyFeed({container:$('#feed'),trigger:$('#load-more'),rend
  $('#feed-count').textContent=total?`${visible} of ${total} stories`:'';
  $('#feed-end').hidden=hasMore||view==='sources';
 }});
+const allStories=()=>dedupe([...live,...curated,...saved,...(learning.currentQuest?.items||[])]);
+function renderQuest(){
+ learning=ensureDailyQuest(learning,allStories());saveLearning();const quest=learning.currentQuest,done=quest.completedIds.length;
+ $('#quest-count').textContent=done+'/5';
+ $('#trail-section').hidden=true;$('#discovery-controls').hidden=true;$('#library-note').hidden=true;$('#topics').hidden=true;$('#topic-context').hidden=true;$('#refresh').hidden=true;$('#feed-pagination').hidden=true;$('#feed-end').hidden=true;$('#feed-title').textContent='Today’s Quest';$('#feed-description').textContent=`${done} of ${quest.items.length} explored.`;
+ const topicCount=new Set(quest.items.map(item=>item.topic)).size,complete=done===quest.items.length&&quest.items.length===5;
+ const intro=node(document,'section','quest-hero'+(complete?' complete':'')),copy=node(document,'div','quest-hero-copy');copy.append(node(document,'p','eyebrow',complete?'QUEST COMPLETE · TAKE THE IDEA WITH YOU':'TODAY’S CURIOUS MISSION'),node(document,'h1','',complete?'Five sparks. One richer day.':'Follow five sparks into the unknown.'),node(document,'p','',complete?`You explored ${quest.items.length} ideas across ${topicCount} topics. Let them settle, or keep wandering if curiosity calls.`:'Choose any stop, read at your own pace, and mark it explored when it gives you something worth keeping.'));
+ const facts=node(document,'div','quest-facts');facts.append(node(document,'span','',quest.items.length+' stories'),node(document,'span','',topicCount+' topics'),node(document,'span','','No timer'));copy.append(facts);
+ const meter=node(document,'div','quest-meter'),count=node(document,'strong','',String(done));count.setAttribute('aria-hidden','true');meter.append(count,node(document,'span','',' of '+quest.items.length+' sparks collected'));const bar=node(document,'progress','quest-progress');bar.max=Math.max(quest.items.length,1);bar.value=done;bar.setAttribute('aria-label',`${done} of ${quest.items.length} quest stories explored`);meter.append(bar);intro.append(copy,meter);
+ if(complete){const celebration=node(document,'div','quest-celebration','✦  ◇  ✳  ◌  ✦');celebration.setAttribute('aria-hidden','true');intro.append(celebration);const button=node(document,'button','quest-continue','Continue browsing normally');button.type='button';button.dataset.continueBrowsing='';intro.append(button)}
+ const route=node(document,'nav','quest-route');route.setAttribute('aria-label','Today’s five quest stories');for(const [index,item] of quest.items.entries()){const explored=quest.completedIds.includes(item.id),active=!explored&&quest.items.slice(0,index).every(previous=>quest.completedIds.includes(previous.id)),step=node(document,'button','quest-route-step'+(explored?' explored':active?' current':''));step.type='button';step.dataset.questOpen=item.id;step.setAttribute('aria-label',`Open quest story ${index+1}: ${item.title}${explored?', explored':''}`);step.append(node(document,'span','quest-route-number',explored?'✓':String(index+1)),node(document,'small','',item.topic),node(document,'strong','',item.title));route.append(step)}
+ const week=node(document,'section','quest-week');week.append(node(document,'h3','','This week'));const days=node(document,'div','week-days');for(const row of weekHistory(learning.history)){const cell=node(document,'div',row.completed?'week-day complete':'week-day');cell.append(node(document,'strong','',new Date(row.date+'T12:00:00').toLocaleDateString([],{weekday:'short'})),node(document,'span','',row.completed?'✓':String(row.count)),node(document,'small','',row.completed?'Completed':row.count?row.count+'/5':'—'));days.append(cell)}week.append(days);
+ const cards=quest.items.map((item,index)=>{const explored=quest.completedIds.includes(item.id),stop=node(document,'section','quest-stop'+(explored?' explored':'')),label=node(document,'div','quest-stop-label');label.append(node(document,'span','',`SPARK ${index+1}`),node(document,'strong','',explored?'Explored ✓':item.topic));const card=cardNode(document,item,saved.some(row=>row.id===item.id));if(explored){card.className+=' quest-explored';card.setAttribute('aria-label',item.title+' · explored')}stop.append(label,card);return stop});$('#feed').replaceChildren(intro,route,...cards,week);feedKey='quest:'+quest.day;
+}
+function renderReview(){
+ const due=dueTakeaways(learning),all=learning.takeaways;
+ $('#trail-section').hidden=true;$('#discovery-controls').hidden=true;$('#library-note').hidden=true;$('#topics').hidden=true;$('#topic-context').hidden=true;$('#refresh').hidden=true;$('#feed-pagination').hidden=true;$('#feed-end').hidden=true;$('#feed-title').textContent='Remember it later';$('#feed-description').textContent=due.length?`${due.length} takeaway${due.length===1?' is':'s are'} ready to review.`:'Your personal ideas, scheduled locally.';
+ if(!all.length){const empty=node(document,'section','empty review-zero');empty.append(node(document,'h2','','Turn reading into something you keep'),node(document,'p','','Mark an article as explored, then save one short takeaway in your own words. It will return after 1, 3, 7, and 21 days.'));$('#feed').replaceChildren(empty);return}
+ const heading=node(document,'section','review-heading');heading.append(node(document,'p','eyebrow','A SMALL MEMORY CHECK'),node(document,'h2','',due.length?'Ready for review':'You’re caught up'),node(document,'p','',due.length?'Choose the answer that fits. There is no score and no streak.':'Nothing is due today. Your saved takeaways remain in the library below.'));
+ const dueNodes=due.map(record=>takeawayCardNode(document,record,{due:true}));const library=node(document,'section','review-library');library.append(node(document,'h2','','Takeaway library'));for(const record of all.filter(row=>!due.some(item=>item.articleId===row.articleId)))library.append(takeawayCardNode(document,record));$('#feed').replaceChildren(heading,...dueNodes,library);feedKey='review';
+}
 function render(){stats();
 const atHome=view==='home';home?.setActive(atHome);$('.layout').hidden=atHome;
 $('.skip-link').href=atHome?'#home-title':'#discover';
 document.querySelectorAll('[data-view]').forEach(b=>{b.classList.toggle('active',b.dataset.view===view);b.setAttribute('aria-current',b.dataset.view===view?'page':'false')});
 if(atHome)return;
 
+const focused=view==='quest'||view==='review';for(const selector of ['#discover-kicker','#discover-title','#discover-intro','#discover-hero','#feed-heading','#save-hint','#feed-meta'])$(selector).hidden=focused;$('.right').hidden=focused;$('.layout').classList.toggle('focus-view',focused);
+
+if(view==='quest'){renderQuest();return}if(view==='review'){renderReview();return}
 $('#discovery-controls').hidden=view==='sources';$('#trail-section').hidden=view!=='feed';$('#library-note').hidden=view!=='saved';
 $('#open-only').setAttribute('aria-pressed',String(openOnly));
 $('#filter-note').textContent=trail?'Trail: '+TRAILS.find(t=>t.id===trail)?.title:openOnly?'Openly licensed articles · loaded on demand. Availability depends on the source.':'';
@@ -70,14 +99,21 @@ const controller=new FeedController({onChange:state=>{
   if(!reader?.isOpen)render();
 }});
 async function refresh(){const result=await controller.refresh();if(result==='cooldown')$('#status').textContent='Please wait 30 seconds between refreshes.'}
-document.addEventListener('click',e=>{const nav=e.target.closest('[data-view]');if(nav){if(!['home','feed','decade','saved','sources'].includes(nav.dataset.view))return;reader?.cancelPending();view=nav.dataset.view;topic='All topics';trail='';query='';openOnly=false;$('#search').value='';render();window.scrollTo({top:0,left:0,behavior:'instant'});if(view==='home')$('#home-title').focus({preventScroll:true});return}const filter=e.target.closest('[data-filter],[data-topic]');if(filter){const selected=filter.dataset.filter||filter.dataset.topic;if(!topics.includes(selected))return;reader?.cancelPending();topic=selected;trail='';if(view==='sources')view='feed';render();return}const save=e.target.closest('[data-save]');if(save){saveStory(save.dataset.save);return}const read=e.target.closest('[data-read]');if(read&&![...live,...curated,...saved].some(c=>c.id===read.dataset.read))return;if(read){resetDay();}if(read&&!progress.ids.includes(read.dataset.read)&&progress.ids.length<200){progress.ids.push(read.dataset.read);persist('ss-progress',progress);stats()}});
+ document.addEventListener('click',e=>{const nav=e.target.closest('[data-view]');if(nav){if(!['home','feed','quest','review','decade','saved','sources'].includes(nav.dataset.view))return;reader?.cancelPending();view=nav.dataset.view;topic='All topics';trail='';query='';openOnly=false;$('#search').value='';render();window.scrollTo({top:0,left:0,behavior:'instant'});if(view==='home')$('#home-title').focus({preventScroll:true});return}const filter=e.target.closest('[data-filter],[data-topic]');if(filter){const selected=filter.dataset.filter||filter.dataset.topic;if(!topics.includes(selected))return;reader?.cancelPending();topic=selected;trail='';learning=rememberTopic(learning,selected);saveLearning();if(view==='sources')view='feed';render();return}const save=e.target.closest('[data-save]');if(save){saveStory(save.dataset.save);return}const read=e.target.closest('[data-read]');if(read&&![...live,...curated,...saved,...(learning.currentQuest?.items||[])].some(c=>c.id===read.dataset.read))return;if(read){resetDay();}if(read&&!progress.ids.includes(read.dataset.read)&&progress.ids.length<200){progress.ids.push(read.dataset.read);persist('ss-progress',progress);stats()}});
 function markExplored(id){resetDay();if(!progress.ids.includes(id)&&progress.ids.length<200){progress.ids.push(id);persist('ss-progress',progress);stats()}}
-reader=createArticleReader({doc:document,win:window,dialog:$('#reader'),content:$('#reader-content'),isSaved:id=>saved.some(c=>c.id===id),onSave:saveStory,onOpen:markExplored});
-const findStory=id=>[...live,...curated,...saved].find(c=>c.id===id);
+reader=createArticleReader({doc:document,win:window,dialog:$('#reader'),content:$('#reader-content'),isSaved:id=>saved.some(c=>c.id===id),onSave:saveStory,onOpen:markExplored,onExplore:item=>{learning=markQuestExplored(learning,item.id);markExplored(item.id);saveLearning();render()},isExplored:id=>{const quest=learning.currentQuest;if(quest?.day===localDayKey()&&quest.items.some(item=>item.id===id))return quest.completedIds.includes(id);return learning.exploredIds.includes(id)},getTakeaway:id=>learning.takeaways.find(row=>row.articleId===id)||null,onTakeaway:(item,note)=>{try{learning=saveTakeaway(learning,item,note,new Date(),saved.some(row=>row.id===item.id));saveLearning();stats();return {ok:true,message:'Takeaway saved.'}}catch(error){return {ok:false,message:error.message}}},onDeleteTakeaway:id=>{learning=deleteTakeaway(learning,id);saveLearning();stats()},getRecommendations:item=>curiosityChains(item,allStories()),resolveItem:id=>findStory(id)});
+const findStory=id=>[...live,...curated,...saved,...(learning.currentQuest?.items||[])].find(c=>c.id===id);
 document.addEventListener('click',e=>{
  const openButton=e.target.closest?.('[data-open]');
  if(openButton){const item=findStory(openButton.dataset.open);if(item)reader.open(item,openButton);return}
+ const questButton=e.target.closest?.('[data-quest-open]');if(questButton){const item=findStory(questButton.dataset.questOpen);if(item)reader.open(item,questButton);return}
  const card=e.target.closest?.('[data-card-id]');if(card)reader.cardClick(findStory(card.dataset.cardId),e);
+});
+document.addEventListener('click',e=>{
+ const continueButton=e.target.closest?.('[data-continue-browsing]');if(continueButton){view='feed';render();$('#feed-title').focus({preventScroll:true});return}
+ const answer=e.target.closest?.('[data-review-answer]');if(answer){learning=reviewTakeaway(learning,answer.dataset.reviewId,answer.dataset.reviewAnswer);saveLearning();render();return}
+ const remove=e.target.closest?.('[data-delete-takeaway]');if(remove&&!reader?.isOpen){learning=deleteTakeaway(learning,remove.dataset.deleteTakeaway);saveLearning();render();announce('Takeaway deleted.');return}
+ const update=e.target.closest?.('[data-update-takeaway]');if(update){const record=learning.takeaways.find(row=>row.articleId===update.dataset.updateTakeaway),field=update.closest?.('[data-takeaway-id]')?.querySelector?.('[data-edit-takeaway]');if(!record||!field)return;try{learning=saveTakeaway(learning,{id:record.articleId,title:record.title,source:record.source,topic:record.topic,url:record.url},field.value,new Date(),record.saved);saveLearning();render();announce('Takeaway updated.')}catch(error){announce(error.message)}return}
 });
 document.addEventListener('keydown',e=>{
  if(e.key!=='Enter'||e.target.closest?.('a, button, input, textarea, select, [contenteditable]'))return;
@@ -91,7 +127,7 @@ document.addEventListener('click',e=>{const button=e.target.closest?.('[data-tra
 $('#surprise').onclick=()=>{const pool=OPEN_ARTICLES.filter(c=>!progress.ids.includes(c.id));const choices=pool.length?pool:OPEN_ARTICLES;reader.open(choices[Math.floor(Math.random()*choices.length)],$('#surprise'))};
 function enterDiscoveries(selected='All topics'){
  if(!topics.includes(selected))return;
- reader.cancelPending();view='feed';topic=selected;query='';trail='';openOnly=false;$('#search').value='';render();
+ reader.cancelPending();view='feed';topic=selected;learning=rememberTopic(learning,selected);saveLearning();query='';trail='';openOnly=false;$('#search').value='';render();
  $('#feed-title').scrollIntoView({behavior:'instant',block:'start'});$('#feed-title').focus({preventScroll:true});
 }
 home=createHome({doc:document,win:window,onSelect:enterDiscoveries,onBrowse:()=>enterDiscoveries()});

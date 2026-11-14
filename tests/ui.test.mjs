@@ -1,7 +1,7 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {cardNode,sourceNodes} from '../dist/ui.mjs';
+import {cardNode,sourceNodes,takeawayCardNode} from '../dist/ui.mjs';
 import {normalizeCard} from '../dist/feed-core.mjs';
 import {document,descendants} from './dom.mjs';
 test('attacker strings remain text and cannot create markup or event attributes',()=>{
@@ -17,7 +17,7 @@ test('source details also use DOM text assignment',()=>{
  const nodes=els.flatMap(descendants);assert.ok(!nodes.some(n=>n.tagName==='SCRIPT'||n.tagName==='IMG'));assert.equal(nodes.find(n=>n.tagName==='A').href,undefined);
 });
 test('application has no HTML parsing sinks, eval or dynamic script construction',async()=>{
- for(const file of ['../dist/app.js','../dist/ui.mjs','../dist/feed-core.mjs','../dist/reader.mjs','../dist/discovery.mjs','../dist/theme.js','../dist/home.mjs']){
+ for(const file of ['../dist/app.js','../dist/ui.mjs','../dist/feed-core.mjs','../dist/reader.mjs','../dist/discovery.mjs','../dist/learning.mjs','../dist/theme.js','../dist/home.mjs']){
   const source=await readFile(new URL(file,import.meta.url),'utf8');
   assert.doesNotMatch(source,/\.innerHTML\s*=|\.outerHTML\s*=|insertAdjacentHTML|document\.write|\beval\s*\(|new Function\s*\(/);
  }
@@ -28,4 +28,10 @@ test('cards show the actual destination instead of hiding it behind an aggregato
  const el=cardNode(document,c,false),nodes=descendants(el);
  assert.ok(el.textContent.includes('External site: publisher.example.org'));
  const read=nodes.find(n=>n.dataset.open==='outbound');assert.equal(read.tagName,'BUTTON');assert.equal(read.textContent,'Read here →');
+});
+test('personal takeaways render as plain text with safe links and bounded controls',()=>{
+ const attack='<img src=x onerror=evil()> Remember this';
+ const card=takeawayCardNode(document,{articleId:'one',title:'Article',source:'Source',topic:'Science',note:attack,url:'https://example.org/article',completed:false},{due:true});
+ const nodes=descendants(card);assert.ok(card.textContent.includes(attack));assert.equal(nodes.some(node=>node.tagName==='IMG'),false);
+ assert.equal(nodes.find(node=>node.className==='review-original').href,'https://example.org/article');assert.equal(nodes.filter(node=>node.dataset.reviewAnswer).length,3);
 });
