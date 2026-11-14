@@ -23,6 +23,8 @@ PUBLIC_FILES = {
     '/ui.mjs': ('ui.mjs', 'text/javascript; charset=utf-8'),
     '/style.css': ('style.css', 'text/css; charset=utf-8'),
     '/manifest.json': ('manifest.json', 'application/manifest+json'),
+    '/favicon.png': ('favicon.png', 'image/png'),
+    '/logo.png': ('logo.png', 'image/png'),
 }
 CSP = ("default-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self'; "
        "connect-src 'self' https://hacker-news.firebaseio.com https://api.spaceflightnewsapi.net "

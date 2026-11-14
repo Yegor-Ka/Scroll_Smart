@@ -35,3 +35,8 @@ test('personal takeaways render as plain text with safe links and bounded contro
  const nodes=descendants(card);assert.ok(card.textContent.includes(attack));assert.equal(nodes.some(node=>node.tagName==='IMG'),false);
  assert.equal(nodes.find(node=>node.className==='review-original').href,'https://example.org/article');assert.equal(nodes.filter(node=>node.dataset.reviewAnswer).length,3);
 });
+test('product logo and favicon are wired as local application assets',async()=>{
+ const html=await readFile(new URL('../dist/index.html',import.meta.url),'utf8'),manifest=JSON.parse(await readFile(new URL('../dist/manifest.json',import.meta.url),'utf8'));
+ assert.match(html,/<link rel="icon" type="image\/png" href="\/favicon\.png">/);assert.match(html,/class="brand-logo" src="\/logo\.png"/);assert.match(html,/class="mobile-logo" src="\/logo\.png"/);
+ assert.equal(manifest.icons[0].src,'/favicon.png');assert.equal(manifest.icons[0].type,'image/png');
+});
