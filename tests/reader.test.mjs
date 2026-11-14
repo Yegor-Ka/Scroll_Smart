@@ -71,3 +71,13 @@ test('backdrop click closes the reader while inside clicks and text-selection dr
  h.pop['dialog-pointerdown'](event(10,100));h.pop['dialog-pointercancel']();h.pop['dialog-click'](event(10,100));assert.equal(h.reader.isOpen,true);
  h.pop['dialog-pointerdown'](event(10,100));h.pop['dialog-click'](event(10,100));assert.equal(h.reader.isOpen,false);assert.equal(h.dialog.open,false);assert.equal(focused,true);assert.equal(h.win.returned.top,430);
 });
+test('reader offers explicit exploration, a plain-text takeaway, and distinct curiosity paths',()=>{
+ const root=new Element('div'),recommendations=[
+  {kind:'deeper',label:'Go deeper',item:{id:'two',title:'A deeper idea',topic:'Science',source:'Source B'}},
+  {kind:'connection',label:'Make a connection',item:{id:'three',title:'A connected idea',topic:'History',source:'Source C'}}
+ ];
+ renderReader(document,root,{item,payload:full,explored:true,takeaway:{note:'<b>Plain text only</b>'},recommendations});
+ const nodes=descendants(root);assert.equal(nodes.find(node=>node.dataset.takeawayNote).value,'<b>Plain text only</b>');assert.equal(nodes.some(node=>node.tagName==='B'),false);
+ assert.deepEqual(nodes.filter(node=>node.dataset.recommend).map(node=>node.dataset.recommend),['two','three']);assert.match(root.textContent,/not an AI profile/);
+ const fresh=new Element('div');renderReader(document,fresh,{item,payload:full,explored:false});assert.ok(descendants(fresh).some(node=>node.dataset.markExplored===item.id));
+});

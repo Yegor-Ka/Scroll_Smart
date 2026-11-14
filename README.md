@@ -1,6 +1,6 @@
 # Scroll Smart
 
-A responsive personal learning feed for desktop and mobile. It includes topic filters, selected milestones since 2016, original-source attribution, a device-local saved collection, a five-idea daily goal, and an in-app article reader. It is a web app, not a native iOS/Android app.
+A responsive personal learning feed for desktop and mobile. It includes topic filters, selected milestones since 2016, original-source attribution, a device-local saved collection, a five-story daily learning quest, spaced takeaway reviews, curiosity chains, and an in-app article reader. It is a web app, not a native iOS/Android app.
 
 ## Local setup and run
 
@@ -42,10 +42,34 @@ Restart the Python server after updating so its public-asset allowlist includes 
 - On desktop, click the backdrop outside the article to close it. Clicks inside the reader, canceled pointers, and drags beginning inside the article do not dismiss it.
 - Back, Escape, or the browser Back button closes the reader and restores the feed scroll position. The feed DOM and loaded batch stay in place. Outstanding requests are canceled on close and late results are ignored.
 - Double-click/double-tap the card or reading area to save or unsave. Focus a card/reading area and press **S**, or use the save button. Scrolling, long presses, controls, and multi-touch do not count as double-taps.
-- Reader and feed bookmarks use the same collection. Opening a reader counts an idea once toward the daily goal; it does not claim to measure reading completion or comprehension.
+- Reader and feed bookmarks use the same collection. Opening a reader counts an idea once toward the original daily discovery counter; it does not complete a Daily Quest item. Quest completion requires the explicit **Mark as explored** action.
 - Saved stories and progress use browser localStorage, limited to 200 records. They do not sync across devices. Clearing storage removes them; storage failures are explicitly reported as session-only.
 
 A loading state is shown during retrieval. **Excerpt only** means the full article could not be retrieved; the existing summary is displayed without claiming it is complete. Catalog descriptions and structured records have separate labels. No third-party pages are embedded. No remote hero images are displayed: there is no approved licensed-image/proxy path, and the existing `img-src 'self'` policy remains intact.
+
+## Learn & Explore
+
+### Today’s Quest
+
+Today’s Quest creates five distinct stories for one intentional learning session. When topic preferences have been learned from the topics you choose, it aims for three preferred-topic stories, one outside-topic story, and one educational surprise from another topic/source. Selection is deterministic for the browser’s local calendar day and safely returns fewer items only when fewer valid stories exist. Reloading does not silently replace that day’s quest.
+
+Opening a story never completes it. Use **Mark as explored** in the reader. The Quest shows “2 of 5 explored,” a calm completion message after five, topics covered, and a seven-day view of completed quests. There are no streaks, notifications, points, guilt messages, or background tasks.
+
+### Remember it later
+
+After explicitly marking an article explored, you can save one plain-text takeaway of up to 280 characters. A new takeaway returns for local review after 1 day, then 3, 7, and 21 days. **I remember** advances to the next interval; **Partly** repeats the current interval once; **Review again** schedules the next day. A successful review after the final interval marks it complete while retaining it in the local library. Takeaways can be edited or deleted.
+
+### Curiosity chains
+
+The reader can offer up to three next paths: **Go deeper**, **Learn the foundation**, and **Make a connection**. A deterministic scoring utility uses only already loaded stories and their topic, source, date, content type, title, and summary. It excludes the current story, duplicate IDs, and invalid URLs. Missing categories are hidden. Recommendations make no network request and display: “Suggestions are based on topics and sources, not an AI profile.”
+
+### Local data and migration
+
+Existing `ss-saved`, `ss-progress`, and `ss-theme` records remain unchanged. The new versioned `ss-learning-v1` record stores a compact current quest, up to seven history entries, bounded topic preference counts, explicitly explored IDs, and up to 200 validated takeaways with their article ID, safe URL, title, source, topic, article date, saved state, review stage, and next local review date. It never stores article HTML.
+
+Local day keys use `YYYY-MM-DD` from the browser’s local year, month, and day. Review dates use the same local calendar calculation at noon to avoid daylight-saving boundary errors. Every record is validated and bounded when loaded; malformed, oversized, or older partial records fall back to the valid fields or an empty version-1 state. All data stays in this browser. Clearing browser storage removes it, and it does not sync to another device.
+
+These features require no AI service, account, database, analytics, paid service, API key, or new external API.
 
 ## Feed and lazy rendering
 
@@ -97,7 +121,7 @@ scroll-smart/.venv/bin/python -B -m unittest discover -s scroll-smart/tests -p '
 scroll-smart/.venv/bin/python -m pip check
 ```
 
-Latest result: **53 JavaScript tests + 22 Python tests = 75 passing tests**, zero failures. Coverage includes reader opening, mobile dialog markup/rules, bookmarks, daily-goal integration, fallbacks, original-source links, SSRF/DNS/redirect controls, timeouts and response limits, sanitization, robots policy, cache/concurrency limits, and existing feed/lazy-loading/security regressions. Browser/device appearance remains unverified. Live checks confirmed all 16 new article main-text extractions. The initial pass hit rate limits; the remaining six succeeded after a cooldown. Fixture tests are not an independent penetration test.
+Latest result: **63 JavaScript tests + 23 Python tests = 86 passing tests**, zero failures; `pip check` also reports no broken requirements. Coverage includes same-day/new-day quests, distinct selection and fallback, explicit completion, weekly history, takeaway creation/edit/deletion and every review transition, corrupted storage and note limits, deterministic curiosity chains and empty states, plain-text rendering, reader opening, mobile dialog markup/rules, bookmarks, feed refresh/lazy loading, theme behavior, SSRF/DNS/redirect controls, timeouts and response limits, sanitization, robots policy, cache/concurrency limits, and security regressions. Browser/device appearance remains unverified. Live checks confirmed all 16 new article main-text extractions in the earlier discovery review. Fixture tests are not an independent penetration test.
 
 ## Production deployment review still required
 
