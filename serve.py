@@ -15,6 +15,9 @@ PUBLIC_FILES = {
     '/index.html': ('index.html', 'text/html; charset=utf-8'),
     '/app.js': ('app.js', 'text/javascript; charset=utf-8'),
     '/feed-core.mjs': ('feed-core.mjs', 'text/javascript; charset=utf-8'),
+    '/home.mjs': ('home.mjs', 'text/javascript; charset=utf-8'),
+    '/discovery.mjs': ('discovery.mjs', 'text/javascript; charset=utf-8'),
+    '/theme.js': ('theme.js', 'text/javascript; charset=utf-8'),
     '/reader.mjs': ('reader.mjs', 'text/javascript; charset=utf-8'),
     '/ui.mjs': ('ui.mjs', 'text/javascript; charset=utf-8'),
     '/style.css': ('style.css', 'text/css; charset=utf-8'),
@@ -57,8 +60,10 @@ class Handler(BaseHTTPRequestHandler):
         pass
 
     def send_error(self, code, message=None, explain=None):
+        self.close_connection = True
         body = f'{code}\n'.encode('ascii')
         self.send_response(code)
+        self.send_header('Connection', 'close')
         self.send_header('Content-Type', 'text/plain; charset=utf-8')
         self.send_header('Content-Length', str(len(body)))
         self.end_headers()
@@ -83,11 +88,16 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(403)
             return
         origins = self.headers.get_all('Origin', [])
+        fetch_sites = self.headers.get_all('Sec-Fetch-Site', [])
         if (len(origins) > 1 or (origins and origins[0] != 'http://' + hosts[0].lower())
-                or self.headers.get('Sec-Fetch-Site', 'none') not in {'none', 'same-origin'}):
+                or len(fetch_sites) > 1
+                or (fetch_sites and fetch_sites[0] not in {'none', 'same-origin'})):
             self.send_error(403)
             return
-        if self.headers.get('Transfer-Encoding') or self.headers.get('Content-Length', '0') != '0':
+        # Check every occurrence: get() alone hides conflicting duplicate headers.
+        lengths = self.headers.get_all('Content-Length', [])
+        if ('Transfer-Encoding' in self.headers or len(lengths) > 1
+                or (lengths and lengths[0] != '0')):
             self.send_error(400)
             return
         if not self.path.startswith('/') or self.path.startswith('//') or len(self.path) > 2048:

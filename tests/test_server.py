@@ -74,6 +74,20 @@ class ServerSecurityTests(unittest.TestCase):
         self.assertEqual(self.request(headers=['Host: localhost:8080', 'Content-Length: 1'])[0], 400)
         self.assertEqual(self.request(headers=['Host: localhost:8080', 'Transfer-Encoding: chunked'])[0], 400)
 
+    def test_ambiguous_request_headers_are_rejected(self):
+        for extra in [
+            ['Content-Length: 0', 'Content-Length: 1'],
+            ['Content-Length: 0', 'Content-Length: 0'],
+            ['Transfer-Encoding:'],
+            ['Transfer-Encoding:', 'Transfer-Encoding: chunked'],
+        ]:
+            with self.subTest(headers=extra):
+                status, headers, _ = self.request(headers=['Host: localhost:8080'] + extra)
+                self.assertEqual(status, 400)
+                self.assertEqual(headers.get('Connection'), 'close')
+        self.assertEqual(self.request(headers=['Host: localhost:8080',
+            'Sec-Fetch-Site: same-origin', 'Sec-Fetch-Site: cross-site'])[0], 403)
+
     def test_symlinks_hardlinks_and_extra_files_are_not_served(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

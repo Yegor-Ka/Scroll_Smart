@@ -16,10 +16,30 @@ Open **http://127.0.0.1:8080**. From inside `scroll-smart`, use `.venv/bin/pytho
 
 The launcher serves an absolute asset directory, accepts only localhost/127.0.0.1, validates Host and Origin, and requires Unix descriptor-relative/no-follow file opening. It is a development server; do not expose it directly to the internet.
 
+## Discovery upgrade — 2026-11-14
+
+- Four three-article trails: Understand your mind, Think like a planet, Find hidden patterns, and Take the scenic route. Trail progress counts opened articles, not verified comprehension.
+- Search titles, previews, topics, and source names; combine search with topic and Open articles filters. Clear filters resets the current selection. Surprise me prefers an unopened article from the curated open collection.
+- Sixteen new entry points from Wikipedia and Wikivoyage, interleaved with existing news. New subjects: Psychology, Philosophy, Mathematics, Climate, and Culture. Card previews and reflection questions are original editorial introductions, not quotations or substitutes for the source text.
+- Reading includes an expandable section list and a reflection question. Full main text is fetched on demand through the Python server, with contributors, original revision, and CC BY-SA 4.0 attribution. Equations, images, reference lists, infoboxes and navigation are omitted and this is disclosed in the reader.
+- Theme button cycles **Auto → Light → Dark → Auto**. Auto follows the device preference. The choice stays in localStorage; an early external script applies it before styles load. No external UI library, font, tracker, or image dependency was added.
+- Login and account sync are deliberately deferred under the no-server/no-database requirement. Saved articles continue to work on this browser without an account. They are bookmarks/previews, not offline copies of full article bodies.
+
+Deepstash research informed small reading entry points, topic exploration, and connected ideas; its content and assets were not copied. See [the research and verification notes](DISCOVERY_RESEARCH.md).
+
+## Welcome page and interactive illustration
+
+Home is the default screen, with “Where will your curiosity take you today?” and all 15 topic choices. A topic opens its filtered feed; “A bit of everything” opens the full feed. The Home navigation button returns to the welcome page.
+
+The locally drawn atmosphere fills the home-page background behind a centered welcome banner. Desktop layouts wider than 650px with a fine pointer use a sticky banner and eased dust transition; mobile/touch layouts keep natural page scrolling. It responds to fine-pointer movement and scroll position, including scrolling in either direction on mobile. On mobile, the headline starts dissolving on the first scroll movement, with no sticky hold, extra scroll distance, or dust easing delay. Desktop retains the original short lead-in and extended scroll stage. It dissolves into particles sampled from its rendered letters as you scroll down and reassembles along the same paths when you scroll back up. The original heading remains available to assistive technology; when canvas rendering is unavailable it remains visible. Rendering stops once motion settles, when offscreen, when the page is hidden, and when leaving Home. Device pixel ratio is capped at 2 and each display canvas is capped at approximately 2.4 million pixels. Glyph sampling uses a bounded grid and runs only on layout/font/theme changes. Reduced-motion users see a still background and ordinary heading without the extra scroll stage; all topic buttons remain ordinary keyboard-accessible controls. No animation library, external image, or new network access is required.
+
+Restart the Python server after updating so its public-asset allowlist includes `home.mjs`, then reload the page.
+
 ## Reading and saving
 
 - Click/tap a card for the in-app reader. A 500 ms delay on the card body distinguishes a single click from the existing double gesture. **Read here →** and Enter on a focused card open immediately.
 - The native dialog becomes full-screen on phones. It shows the title, provider, topic, available author/date, an estimate for the text actually displayed, and a persistent original-source link opening a separate tab.
+- On desktop, click the backdrop outside the article to close it. Clicks inside the reader, canceled pointers, and drags beginning inside the article do not dismiss it.
 - Back, Escape, or the browser Back button closes the reader and restores the feed scroll position. The feed DOM and loaded batch stay in place. Outstanding requests are canceled on close and late results are ignored.
 - Double-click/double-tap the card or reading area to save or unsave. Focus a card/reading area and press **S**, or use the save button. Scrolling, long presses, controls, and multi-touch do not count as double-taps.
 - Reader and feed bookmarks use the same collection. Opening a reader counts an idea once toward the daily goal; it does not claim to measure reading completion or comprehension.
@@ -39,6 +59,8 @@ All feed adapters retain their original fetching behavior. Full-text retrieval i
 
 | Adapter / source | In-app content | Why / conditions |
 | --- | --- | --- |
+| Wikipedia / 13 selected explainers | Full main article text | Fixed local catalog of titles; official parse API; verified title/revision; contributor and CC BY-SA 4.0 attribution. |
+| Wikivoyage / 3 selected guides | Full main article text when available | Same fixed-ID model and sanitization, with Wikivoyage contributor and CC BY-SA 4.0 attribution. |
 | Europe PMC / Medicine | Full main-body text when approved; otherwise excerpt | Rehydrate the MED ID through the official API, require Open Access, a valid PMCID and an explicit CC BY or CC0 reuse link in JATS XML. Reject marked retractions, unverified licenses, DTDs/entities, blocked responses or unsupported content. |
 | USGS / Nature | Official structured event record | Re-fetch the official event ID. Labeled as observations, not a complete news article or an emergency alert. |
 | CISA KEV / Cybersecurity advisories | Official catalog record | Look up the CVE in the existing official cisagov mirror (CC0). Catalog addition dates are not attack dates. |
@@ -59,9 +81,9 @@ Primary policy references: [Europe PMC REST service](https://europepmc.org/Restf
 
 `GET /api/reader?id=<internal-feed-id>` is same-origin and accepts one ID only—no URL field, proxy destination, cookies, API keys, or browser-supplied article HTML. Supported native IDs are independently rehydrated from the official source and matched against the returned record; unknown/unsupported records cannot become arbitrary fetches. The endpoint does not trust localStorage records as server authorization. IDs are not signed tokens: they select public source records through fixed handlers, not arbitrary URL paths or hosts.
 
-Server destinations are an explicit subset of existing source domains: `www.ebi.ac.uk`, `earthquake.usgs.gov`, `openlibrary.org`, `raw.githubusercontent.com`, and `oceanservice.noaa.gov`. Only HTTPS/default port is permitted. DNS answers must all be public. Literal/private/loopback/link-local/reserved/multicast/metadata destinations, credentials and custom ports are rejected. The socket connects to a validated numeric address while TLS verifies the original hostname; redirects trigger fresh URL/DNS checks. No environment HTTP proxy or second DNS lookup is used. HTML and robots retrieval do not follow redirects.
+Server destinations are explicitly allowlisted: `www.ebi.ac.uk`, `earthquake.usgs.gov`, `openlibrary.org`, `raw.githubusercontent.com`, `oceanservice.noaa.gov`, `en.wikipedia.org`, and `en.wikivoyage.org`. Only HTTPS/default port is permitted. DNS answers must all be public. Literal/private/loopback/link-local/reserved/multicast/metadata destinations, credentials and custom ports are rejected. The socket connects to a validated numeric address while TLS verifies the original hostname; redirects trigger fresh URL/DNS checks. No environment HTTP proxy or second DNS lookup is used. HTML and robots retrieval do not follow redirects.
 
-Limits: four reader requests and four DNS resolutions concurrently, 20 uncached reader admissions/minute globally, 18-second retrieval deadline with socket shutdown watchdog, six-second socket operations, two-second DNS waits, three redirects, 2 MiB response cap (HTML 1 MiB; robots 64 KiB), and 120,000 text characters. Responses are cached in memory for 10 minutes (fallbacks 60 seconds), at most 64 entries. No article payload, credential, or source query URL is logged. Unsupported, blocked, paywalled, unlicensed, or unsafely parsed content returns the excerpt state.
+Limits: four reader requests and four DNS resolutions concurrently, 20 uncached reader admissions/minute globally, 18-second retrieval deadline with socket shutdown watchdog, six-second socket operations, two-second DNS waits, three redirects, 2 MiB response cap (HTML 1 MiB; robots 64 KiB), and 120,000 text characters. Responses are cached in memory for 10 minutes (fallbacks 60 seconds), at most 64 entries. HTTP 429 from a new Wikimedia source pauses uncached requests to that host for two minutes. The browser also stops reader downloads at 512,000 bytes while streaming. No article payload, credential, or source query URL is logged. Unsupported, blocked, paywalled, unlicensed, or unsafely parsed content returns the excerpt state.
 
 nh3 removes executable/unwanted HTML subtrees and all attributes/URLs. The server returns only typed plain-text paragraph/heading blocks, never an HTML document. The browser validates them and uses `textContent`/DOM construction. XML parsing blocks external entities and DTDs. No iframe, image hotlink, script, cookie, or tracking markup is imported. Security headers and Trusted Types stay in force; the sole network-policy addition is `connect-src 'self'` for the new same-origin endpoint, with no permissive CORS header.
 
@@ -75,7 +97,7 @@ scroll-smart/.venv/bin/python -B -m unittest discover -s scroll-smart/tests -p '
 scroll-smart/.venv/bin/python -m pip check
 ```
 
-Latest result: **42 JavaScript tests + 20 Python tests = 62 passing tests**, zero failures. Coverage includes reader opening, mobile dialog markup/rules, bookmarks, daily-goal integration, fallbacks, original-source links, SSRF/DNS/redirect controls, timeouts and response limits, sanitization, robots policy, cache/concurrency limits, and existing feed/lazy-loading/security regressions. Browser/device appearance and live provider access remain unverified; fixture tests are not an independent penetration test.
+Latest result: **53 JavaScript tests + 22 Python tests = 75 passing tests**, zero failures. Coverage includes reader opening, mobile dialog markup/rules, bookmarks, daily-goal integration, fallbacks, original-source links, SSRF/DNS/redirect controls, timeouts and response limits, sanitization, robots policy, cache/concurrency limits, and existing feed/lazy-loading/security regressions. Browser/device appearance remains unverified. Live checks confirmed all 16 new article main-text extractions. The initial pass hit rate limits; the remaining six succeeded after a cooldown. Fixture tests are not an independent penetration test.
 
 ## Production deployment review still required
 

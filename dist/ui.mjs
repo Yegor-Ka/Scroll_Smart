@@ -1,3 +1,4 @@
+import {OPEN_IDS} from './discovery.mjs';
 // Feed and stored text is assigned only through textContent, never parsed as HTML.
 import {safeUrl} from './feed-core.mjs';
 export function node(doc,tag,className='',text=''){
@@ -17,6 +18,7 @@ export function cardNode(doc,c,isSaved){
  const body=node(doc,'div','card-body'),meta=node(doc,'div','card-meta');
  const date=c.live?new Date(c.date).toLocaleDateString():c.evergreen?'Evergreen':String(c.year||'');
  meta.append(node(doc,'span','',c.source),node(doc,'span','','· '+date));body.append(meta);
+ body.append(node(doc,'span','access-label',OPEN_IDS.has(c.id)||c.id==='coral'?'◇ Open article · read in app':c.id.startsWith('book-OL')?'Catalog description':c.id.startsWith('usgs-')||c.id.startsWith('cisa-')?'Official record':c.id.startsWith('med-')?'Full text when licensed':'Summary + source link'));
  if(c.kind)body.append(node(doc,'div','content-kind',c.kind));
  body.append(node(doc,'h3','',c.title),node(doc,'p','',c.summary));
  const destination=safeUrl(c.url);if(destination)body.append(node(doc,'p','destination','External site: '+new URL(destination).hostname));
@@ -33,6 +35,11 @@ export function sourceNodes(doc,providers,states){
   card.append(node(doc,'p','',state?(state.ok?'Last fetch succeeded':'Unavailable — previous results retained')+(state.updated?' · Last successful check: '+new Date(state.updated).toLocaleString():''):'Not checked yet'));
   card.append(node(doc,'p','source-caveat','Source identity and link format are separate from article accuracy or malware screening. External pages may change.'));card.append(link(doc,'Provider documentation ↗',p.docs));return card;
  });
+ for(const [name,url,description] of [
+ ['Wikipedia · open knowledge','https://foundation.wikimedia.org/wiki/Policy:Terms_of_Use','Curated articles across psychology, philosophy, science, mathematics, history, and culture. CC BY-SA 4.0 text with contributor and revision attribution.'],
+ ['Wikivoyage · explore the world','https://en.wikivoyage.org/wiki/Wikivoyage:Copyleft','Curated astronomy, archaeology, and rail guides. CC BY-SA 4.0 text; community-edited information may change.']]){
+ const card=node(doc,'div','source-card');card.append(node(doc,'h3','',name),node(doc,'p','',description),node(doc,'p','','Loaded when opened through the local reader, cached for 10 minutes. Images and original formatting are omitted.'),link(doc,'License and reuse policy ↗',url));nodes.push(card);
+ }
  const info=node(doc,'div','source-card');info.append(node(doc,'h3','','How updates work'),node(doc,'p','','Refresh on opening, every 15 minutes while visible, and on returning after 15 minutes. Use Refresh feed for an immediate check (at most once every 30 seconds). Failed providers retain previous results, which may be out of date. No updates run while closed. Your browser contacts providers directly; they receive your IP address. Saved stories stay on this device.'));nodes.push(info);return nodes;
 }
 

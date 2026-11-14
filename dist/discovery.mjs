@@ -1,0 +1,242 @@
+// Curated entry points; article bodies are retrieved only by the ID-only reader.
+export const OPEN_ARTICLES = [
+  {
+    "id": "wiki-spacing",
+    "page": "Spaced repetition",
+    "host": "en.wikipedia.org",
+    "topic": "Psychology",
+    "title": "Remember more by coming back later",
+    "summary": "Explore how spacing study sessions supports memory, and where the evidence has limits.",
+    "prompt": "What would you like to remember a month from now?",
+    "symbol": "◌",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Spaced_repetition"
+  },
+  {
+    "id": "wiki-curiosity",
+    "page": "Curiosity",
+    "host": "en.wikipedia.org",
+    "topic": "Psychology",
+    "title": "Follow the question, not the notification",
+    "summary": "Explore curiosity as a motivation to investigate, learn, and resolve uncertainty.",
+    "prompt": "What question has been sitting in the back of your mind?",
+    "symbol": "?",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Curiosity"
+  },
+  {
+    "id": "wiki-stoicism",
+    "page": "Stoicism",
+    "host": "en.wikipedia.org",
+    "topic": "Philosophy",
+    "title": "A very old toolkit for a complicated day",
+    "summary": "Meet the ancient philosophy of judgment, virtue, and living with what we cannot control.",
+    "prompt": "Which part of a recent challenge was within your control?",
+    "symbol": "◈",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Stoicism"
+  },
+  {
+    "id": "wiki-razor",
+    "page": "Occam's razor",
+    "host": "en.wikipedia.org",
+    "topic": "Philosophy",
+    "title": "When is a simpler explanation better?",
+    "summary": "Investigate a famous reasoning principle, its uses, and the risks of oversimplifying.",
+    "prompt": "What evidence would make you choose a more complex explanation?",
+    "symbol": "⌁",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Occam%27s_razor"
+  },
+  {
+    "id": "wiki-fermi",
+    "page": "Fermi paradox",
+    "host": "en.wikipedia.org",
+    "topic": "Space",
+    "title": "If the universe is so big, where is everybody?",
+    "summary": "Follow the puzzle of extraterrestrial life through competing explanations and unanswered questions.",
+    "prompt": "Which assumption in the question would you test first?",
+    "symbol": "✦",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Fermi_paradox"
+  },
+  {
+    "id": "wiki-biomimicry",
+    "page": "Biomimetics",
+    "host": "en.wikipedia.org",
+    "topic": "Nature",
+    "title": "What can an engineer learn from a leaf?",
+    "summary": "Discover how biological systems inspire materials, machines, and design.",
+    "prompt": "What everyday problem might nature have already solved?",
+    "symbol": "❋",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Biomimetics"
+  },
+  {
+    "id": "wiki-fractal",
+    "page": "Fractal",
+    "host": "en.wikipedia.org",
+    "topic": "Mathematics",
+    "title": "Patterns inside patterns inside patterns",
+    "summary": "Explore self-similarity and why fractal geometry appears in both mathematics and nature.",
+    "prompt": "Where have you seen a pattern repeat at different scales?",
+    "symbol": "❖",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Fractal"
+  },
+  {
+    "id": "wiki-game",
+    "page": "Game theory",
+    "host": "en.wikipedia.org",
+    "topic": "Mathematics",
+    "title": "Your best move depends on someone else",
+    "summary": "Discover how mathematical models describe strategic choices and their limitations.",
+    "prompt": "How would a decision change if everyone cooperated?",
+    "symbol": "⌘",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Game_theory"
+  },
+  {
+    "id": "wiki-carbon",
+    "page": "Carbon cycle",
+    "host": "en.wikipedia.org",
+    "topic": "Climate",
+    "title": "A carbon atom’s journey around the planet",
+    "summary": "Follow carbon through oceans, living organisms, the atmosphere, and rocks.",
+    "prompt": "Which parts of this cycle operate on very different timescales?",
+    "symbol": "↻",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Carbon_cycle"
+  },
+  {
+    "id": "wiki-circular",
+    "page": "Circular economy",
+    "host": "en.wikipedia.org",
+    "topic": "Climate",
+    "title": "What if waste became a starting point?",
+    "summary": "Explore approaches to keeping materials in use, along with practical limits and criticism.",
+    "prompt": "What object could be designed to be repaired more easily?",
+    "symbol": "∞",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Circular_economy"
+  },
+  {
+    "id": "wiki-print",
+    "page": "Printing press",
+    "host": "en.wikipedia.org",
+    "topic": "History",
+    "title": "The machine that changed who could know",
+    "summary": "Trace printing technology and its effects on how information travels.",
+    "prompt": "What changes when copying an idea becomes much cheaper?",
+    "symbol": "▤",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Printing_press"
+  },
+  {
+    "id": "wiki-language",
+    "page": "Linguistic relativity",
+    "host": "en.wikipedia.org",
+    "topic": "Culture",
+    "title": "Does language change how we think?",
+    "summary": "Explore the debate over how language relates to thought and perception.",
+    "prompt": "What does your language make especially easy to express?",
+    "symbol": "あ",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Linguistic_relativity"
+  },
+  {
+    "id": "voyage-astronomy",
+    "page": "Astronomy",
+    "host": "en.wikivoyage.org",
+    "topic": "Space",
+    "title": "Turn a night outside into an observatory",
+    "summary": "Explore Wikivoyage’s practical guide to stargazing and astronomy travel.",
+    "prompt": "What could you notice in the sky without buying any equipment?",
+    "symbol": "☄",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikivoyage",
+    "url": "https://en.wikivoyage.org/wiki/Astronomy"
+  },
+  {
+    "id": "voyage-archaeology",
+    "page": "Archaeological sites",
+    "host": "en.wikivoyage.org",
+    "topic": "Culture",
+    "title": "Read the past in the places people left behind",
+    "summary": "Explore archaeological travel, cultural context, and responsible visits to historic sites.",
+    "prompt": "What could a place reveal that a timeline cannot?",
+    "symbol": "◷",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikivoyage",
+    "url": "https://en.wikivoyage.org/wiki/Archaeological_sites"
+  },
+  {
+    "id": "voyage-rail",
+    "page": "Rail travel",
+    "host": "en.wikivoyage.org",
+    "topic": "Culture",
+    "title": "See the world between the destinations",
+    "summary": "Explore rail travel as a way to understand geography and the journey itself.",
+    "prompt": "What might you notice on a train that you would miss in the air?",
+    "symbol": "⇄",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikivoyage",
+    "url": "https://en.wikivoyage.org/wiki/Rail_travel"
+  },
+  {
+    "id": "wiki-open",
+    "page": "Open-source software",
+    "host": "en.wikipedia.org",
+    "topic": "Computer Science",
+    "title": "Software that invites you behind the curtain",
+    "summary": "Explore the principles, history, and tradeoffs of collaboratively developed software.",
+    "prompt": "What changes when users can study and modify their tools?",
+    "symbol": "⠿",
+    "evergreen": true,
+    "kind": "Open article",
+    "source": "Wikipedia",
+    "url": "https://en.wikipedia.org/wiki/Open-source_software"
+  }
+];
+export const TRAILS = [
+ {id:'mind',title:'Understand your mind',description:'Memory, curiosity & better questions',symbol:'◌',ids:['wiki-spacing','wiki-curiosity','wiki-razor']},
+ {id:'planet',title:'Think like a planet',description:'Living systems, carbon & circular design',symbol:'❋',ids:['wiki-biomimicry','wiki-carbon','wiki-circular']},
+ {id:'patterns',title:'Find hidden patterns',description:'Fractals, strategy & a cosmic mystery',symbol:'❖',ids:['wiki-fractal','wiki-game','wiki-fermi']},
+ {id:'culture',title:'Take the scenic route',description:'Language, ancient places & the journey',symbol:'⇄',ids:['wiki-language','voyage-archaeology','voyage-rail']}
+];
+export const OPEN_IDS = new Set(OPEN_ARTICLES.map(x=>x.id));
+export function selectDiscoveries(items,{query='',openOnly=false,trail='',topic='All topics'}={}){
+ const words=String(query).slice(0,160).toLocaleLowerCase().trim().split(/\s+/).filter(Boolean);
+ const route=TRAILS.find(t=>t.id===trail);
+ return items.filter(c=>(topic==='All topics'||c.topic===topic)&&(!openOnly||OPEN_IDS.has(c.id)||c.id==='coral')&&(!route||route.ids.includes(c.id))&&words.every(w=>[c.title,c.summary,c.topic,c.source].join(' ').toLocaleLowerCase().includes(w)));
+}
+export function interleaveDiscoveries(open,other){
+ const result=[];for(let i=0;i<Math.max(open.length,other.length);i++){if(open[i])result.push(open[i]);if(other[i])result.push(other[i])}return result;
+}

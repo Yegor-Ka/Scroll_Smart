@@ -158,6 +158,35 @@ class ReaderSecurityTests(unittest.TestCase):
             f=Fixtures(raw={'robots.txt':b'User-agent: *\nAllow: /','coral.html':page})
             self.assertEqual(ArticleReader(f).read('coral')['mode'],'excerpt')
 
+    def test_wiki_catalog_identity_attribution_and_sanitization(self):
+        page={'parse':{'title':'Spaced repetition','revid':123,'text':'<p>Learning text.</p><div class="reflist"><ol><li>Reference furniture</li></ol></div><h2>Evidence</h2><p>More text.<script>evil()</script><img src="https://tracker.test"></p>'}}
+        f=Fixtures({'/w/api.php?':page});r=ArticleReader(f).read('wiki-spacing')
+        self.assertEqual(r['mode'],'full')
+        self.assertEqual(r['license'],'https://creativecommons.org/licenses/by-sa/4.0/')
+        self.assertEqual(r['originalUrl'],'https://en.wikipedia.org/w/index.php?oldid=123')
+        self.assertEqual(r['author'],'Wikipedia contributors')
+        self.assertNotIn('Reference furniture',str(r['blocks']));self.assertNotIn('evil()',str(r['blocks']))
+        self.assertEqual(len(f.urls),1);self.assertIn('page=Spaced%20repetition',f.urls[0])
+        for value in ['Wrong title',None]:
+            page['parse']['title']=value
+            self.assertEqual(ArticleReader(Fixtures({'/w/api.php?':page})).read('wiki-spacing')['mode'],'excerpt')
+        page['parse']={'title':'Astronomy','revid':456,'text':'<p>Night sky.</p>'}
+        f=Fixtures({'/w/api.php?':page});r=ArticleReader(f).read('voyage-astronomy')
+        self.assertEqual(r['mode'],'full');self.assertIn('https://en.wikivoyage.org/w/api.php?',f.urls[0])
+        self.assertRaises(ValueError,ArticleReader(f).read,'wiki-arbitrary-title')
+        self.assertRaises(ReaderError,validate_url,'https://evil.en.wikipedia.org/w/api.php')
+
+    def test_upstream_rate_limit_pauses_new_requests_to_that_source(self):
+        class Limited(Fixtures):
+            def json(self,url,deadline):
+                self.urls.append(url)
+                raise UpstreamStatus(429)
+        f=Limited();r=ArticleReader(f)
+        self.assertIn('slow down',r.read('wiki-spacing')['reason'])
+        self.assertIn('slow down',r.read('wiki-curiosity')['reason'])
+        self.assertEqual(len(f.urls),1)
+        self.assertEqual(r.read('hn-123')['mode'],'excerpt')
+
     def test_cache_concurrency_and_rate_limits(self):
         f=Fixtures({'OL1W':{'key':'/works/OL1W','description':'Description'}});r=ArticleReader(f)
         r.read('book-OL1W');r.read('book-OL1W');self.assertEqual(len(f.urls),1)

@@ -7,14 +7,14 @@ const item={id:'med-123',title:'A public research paper',source:'Europe PMC',top
 const full={mode:'full',blocks:[{type:'h2',text:'Findings'},{type:'p',text:'A clean full-text paragraph.'}],source:'Europe PMC',author:'A. Scientist',license:'https://creativecommons.org/licenses/by/4.0/'};
 test('reader displays source text, author/date/topic, estimate, safe original link and bookmark',()=>{
  const root=new Element('div');renderReader(document,root,{item,payload:readerPayload(full),saved:true});
- assert.match(root.textContent,/A public research paper/);assert.match(root.textContent,/A\. Scientist/);assert.match(root.textContent,/Published:/);assert.match(root.textContent,/Medicine/);assert.match(root.textContent,/1 min read/);assert.match(root.textContent,/Full source text/);
+ assert.match(root.textContent,/A public research paper/);assert.match(root.textContent,/A\. Scientist/);assert.match(root.textContent,/Published:/);assert.match(root.textContent,/Medicine/);assert.match(root.textContent,/1 min read/);assert.match(root.textContent,/Main article text/);
  const nodes=descendants(root),link=nodes.find(n=>n.className==='reader-original');assert.equal(link.href,item.url);assert.equal(link.target,'_blank');assert.equal(link.rel,'noopener noreferrer');assert.equal(link.referrerPolicy,'no-referrer');
  assert.equal(nodes.find(n=>n.dataset.save).attributes['aria-pressed'],'true');assert.equal(nodes.some(n=>n.tagName==='IFRAME'||n.tagName==='IMG'),false);
 });
 test('fallback, structured record and book description never claim to be complete articles',()=>{
  for(const mode of ['excerpt','record','description']){
   const root=new Element('div');renderReader(document,root,{item,payload:{mode,blocks:mode==='excerpt'?[]:[{type:'p',text:'Record text'}]}});
-  assert.doesNotMatch(root.textContent,/Full source text/);assert.match(root.textContent,/Read on original source/);
+  assert.doesNotMatch(root.textContent,/Main article text/);assert.match(root.textContent,/Read on original source/);
   if(mode==='excerpt'){assert.match(root.textContent,/Excerpt only/);assert.match(root.textContent,/An available excerpt/)}
  }
 });
@@ -58,4 +58,16 @@ test('reader has a native modal and responsive full-screen mobile rules without 
  assert.match(html,/<dialog id="reader"[^>]+aria-labelledby="reader-title"/);
  assert.match(css,/@media\(max-width:650px\)\{\.reader-dialog\{width:100vw/);assert.match(css,/min-height:44px/);
  assert.match(html,/require-trusted-types-for 'script'/);assert.doesNotMatch(html,/<iframe/);
+});
+
+test('backdrop click closes the reader while inside clicks and text-selection drags do not',async()=>{
+ const h=harness();h.dialog.getBoundingClientRect=()=>({left:100,right:700,top:50,bottom:600});
+ let focused=false;const opener={isConnected:true,focus(){focused=true}};
+ await h.reader.open(item,opener);
+ const event=(x,y,target=h.dialog)=>({target,clientX:x,clientY:y,button:0,isPrimary:true});
+ h.pop['dialog-pointerdown'](event(150,100));h.pop['dialog-click'](event(150,100));assert.equal(h.reader.isOpen,true);
+ h.pop['dialog-pointerdown'](event(150,100,h.content));h.pop['dialog-click'](event(10,100));assert.equal(h.reader.isOpen,true);
+ h.pop['dialog-pointerdown'](event(10,100));h.pop['dialog-pointermove'](event(10,130));h.pop['dialog-click'](event(10,130));assert.equal(h.reader.isOpen,true);
+ h.pop['dialog-pointerdown'](event(10,100));h.pop['dialog-pointercancel']();h.pop['dialog-click'](event(10,100));assert.equal(h.reader.isOpen,true);
+ h.pop['dialog-pointerdown'](event(10,100));h.pop['dialog-click'](event(10,100));assert.equal(h.reader.isOpen,false);assert.equal(h.dialog.open,false);assert.equal(focused,true);assert.equal(h.win.returned.top,430);
 });

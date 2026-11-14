@@ -1,0 +1,223 @@
+{
+  "checked_on": "2026-11-14",
+  "method": "Production _read handler; sequential requests; stop host after HTTP 403 or 429; article bodies not stored",
+  "initial_pass": [
+    {
+      "id": "wiki-spacing",
+      "mode": "full",
+      "blocks": 56,
+      "characters": 16734,
+      "reason": null
+    },
+    {
+      "id": "wiki-curiosity",
+      "mode": "full",
+      "blocks": 103,
+      "characters": 25836,
+      "reason": null
+    },
+    {
+      "id": "wiki-stoicism",
+      "mode": "full",
+      "blocks": 198,
+      "characters": 42725,
+      "reason": null
+    },
+    {
+      "id": "wiki-razor",
+      "mode": "full",
+      "blocks": 192,
+      "characters": 58323,
+      "reason": null
+    },
+    {
+      "id": "wiki-fermi",
+      "mode": "full",
+      "blocks": 257,
+      "characters": 73974,
+      "reason": null
+    },
+    {
+      "id": "wiki-biomimicry",
+      "mode": "full",
+      "blocks": 143,
+      "characters": 41128,
+      "reason": null
+    },
+    {
+      "id": "wiki-fractal",
+      "mode": "full",
+      "blocks": 239,
+      "characters": 33827,
+      "reason": null
+    },
+    {
+      "id": "wiki-game",
+      "mode": "full",
+      "blocks": 324,
+      "characters": 69653,
+      "reason": null
+    },
+    {
+      "id": "wiki-carbon",
+      "mode": "full",
+      "blocks": 122,
+      "characters": 37554,
+      "reason": null
+    },
+    {
+      "id": "wiki-circular",
+      "mode": "full",
+      "blocks": 386,
+      "characters": 103041,
+      "reason": null
+    },
+    {
+      "id": "wiki-print",
+      "error": "Source unavailable",
+      "type": "UpstreamStatus",
+      "status": 429
+    },
+    {
+      "id": "wiki-language",
+      "mode": "not_checked",
+      "reason": "Host access/rate response; no further requests"
+    },
+    {
+      "id": "voyage-astronomy",
+      "error": "Source unavailable",
+      "type": "UpstreamStatus",
+      "status": 429
+    },
+    {
+      "id": "voyage-archaeology",
+      "mode": "not_checked",
+      "reason": "Host access/rate response; no further requests"
+    },
+    {
+      "id": "voyage-rail",
+      "mode": "not_checked",
+      "reason": "Host access/rate response; no further requests"
+    },
+    {
+      "id": "wiki-open",
+      "mode": "not_checked",
+      "reason": "Host access/rate response; no further requests"
+    }
+  ],
+  "results": [
+    {
+      "id": "wiki-spacing",
+      "mode": "full",
+      "blocks": 56,
+      "characters": 16734,
+      "reason": null
+    },
+    {
+      "id": "wiki-curiosity",
+      "mode": "full",
+      "blocks": 103,
+      "characters": 25836,
+      "reason": null
+    },
+    {
+      "id": "wiki-stoicism",
+      "mode": "full",
+      "blocks": 198,
+      "characters": 42725,
+      "reason": null
+    },
+    {
+      "id": "wiki-razor",
+      "mode": "full",
+      "blocks": 192,
+      "characters": 58323,
+      "reason": null
+    },
+    {
+      "id": "wiki-fermi",
+      "mode": "full",
+      "blocks": 257,
+      "characters": 73974,
+      "reason": null
+    },
+    {
+      "id": "wiki-biomimicry",
+      "mode": "full",
+      "blocks": 143,
+      "characters": 41128,
+      "reason": null
+    },
+    {
+      "id": "wiki-fractal",
+      "mode": "full",
+      "blocks": 239,
+      "characters": 33827,
+      "reason": null
+    },
+    {
+      "id": "wiki-game",
+      "mode": "full",
+      "blocks": 324,
+      "characters": 69653,
+      "reason": null
+    },
+    {
+      "id": "wiki-carbon",
+      "mode": "full",
+      "blocks": 122,
+      "characters": 37554,
+      "reason": null
+    },
+    {
+      "id": "wiki-circular",
+      "mode": "full",
+      "blocks": 386,
+      "characters": 103041,
+      "reason": null
+    },
+    {
+      "id": "wiki-print",
+      "mode": "full",
+      "blocks": 160,
+      "characters": 40431,
+      "reason": null
+    },
+    {
+      "id": "wiki-language",
+      "mode": "full",
+      "blocks": 245,
+      "characters": 65448,
+      "reason": null
+    },
+    {
+      "id": "voyage-astronomy",
+      "mode": "full",
+      "blocks": 88,
+      "characters": 20637,
+      "reason": null
+    },
+    {
+      "id": "voyage-archaeology",
+      "mode": "full",
+      "blocks": 89,
+      "characters": 8267,
+      "reason": null
+    },
+    {
+      "id": "voyage-rail",
+      "mode": "full",
+      "blocks": 154,
+      "characters": 28062,
+      "reason": null
+    },
+    {
+      "id": "wiki-open",
+      "mode": "full",
+      "blocks": 188,
+      "characters": 53774,
+      "reason": null
+    }
+  ],
+  "follow_up": "After cooldown, checked only the six remaining entries; all returned full main text."
+}
